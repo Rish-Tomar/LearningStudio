@@ -1,0 +1,39 @@
+import DashboardIcon from "@mui/icons-material/Dashboard";
+import MenuBookIcon from "@mui/icons-material/MenuBook";
+import CodeIcon from "@mui/icons-material/Code";
+import AssignmentIcon from "@mui/icons-material/Assignment";
+import PeopleIcon from "@mui/icons-material/People";
+import AssessmentIcon from "@mui/icons-material/Assessment";
+
+export const facultyNavigation = [
+    {
+        title: "Dashboard",
+        icon: DashboardIcon,
+        path: "/faculty",
+    },
+    {
+        title: "Topics",
+        icon: MenuBookIcon,
+        path: "/faculty/topics",
+    },
+    {
+        title: "Question Bank",
+        icon: CodeIcon,
+        path: "/faculty/questions",
+    },
+    {
+        title: "Assessments",
+        icon: AssignmentIcon,
+        path: "/faculty/assessments",
+    },
+    {
+        title: "Students",
+        icon: PeopleIcon,
+        path: "/faculty/students",
+    },
+    {
+        title: "Reports",
+        icon: AssessmentIcon,
+        path: "/faculty/reports",
+    },
+];

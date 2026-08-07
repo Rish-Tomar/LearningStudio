@@ -1,17 +1,35 @@
-import { Box, Toolbar } from "@mui/material";
+import { useState } from "react";
+
+import {
+    Box,
+    Toolbar,
+} from "@mui/material";
 
 import Header from "../components/layout/Header";
 import Sidebar from "../components/layout/Sidebar";
 
 const DashboardLayout = ({ children }) => {
 
+    const [open, setOpen] = useState(true);
+
+    const handleDrawerToggle = () => {
+
+        setOpen((prev) => !prev);
+
+    };
+
     return (
 
         <Box sx={{ display: "flex" }}>
 
-            <Header />
+            <Header
+                open={open}
+                onDrawerToggle={handleDrawerToggle}
+            />
 
-            <Sidebar />
+            <Sidebar
+                open={open}
+            />
 
             <Box
                 component="main"
