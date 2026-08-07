@@ -1,6 +1,31 @@
-import Typography from "@mui/material/Typography";
+// import Typography from "@mui/material/Typography";
+
+// import DashboardLayout from "../../layouts/DashboardLayout";
+
+// const FacultyDashboard = () => {
+
+//     return (
+
+//         <DashboardLayout>
+
+//             <Typography variant="h4">
+
+//                 Faculty Dashboard
+
+//             </Typography>
+
+//         </DashboardLayout>
+
+//     );
+
+// };
+
+// export default FacultyDashboard;
 
 import DashboardLayout from "../../layouts/DashboardLayout";
+
+import RecentAssessmentsPanel
+from "../../components/dashboard/recentAssessments/RecentAssessmentsPanel.js";
 
 const FacultyDashboard = () => {
 
@@ -8,11 +33,7 @@ const FacultyDashboard = () => {
 
         <DashboardLayout>
 
-            <Typography variant="h4">
-
-                Faculty Dashboard
-
-            </Typography>
+            <RecentAssessmentsPanel />
 
         </DashboardLayout>
 
