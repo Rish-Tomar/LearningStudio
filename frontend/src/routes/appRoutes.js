@@ -6,6 +6,8 @@ import Register from "../pages/auth/Register";
 import FacultyDashboard from "../pages/faculty/FacultyDashboard";
 import StudentDashboard from "../pages/student/StudentDashBoard.js";
 // import AdminDashboard from "../pages/admin/AdminDashboard";
+import PublicRoute from "./PublicRoute.js";
+import ProtectedRoute from "./ProtectedRoute.js";
 
 const AppRoutes = () => {
 
@@ -13,26 +15,52 @@ const AppRoutes = () => {
 
         <Routes>
 
-            <Route path="/" element={<Login />} />
+            <Route path="/" element={ <PublicRoute>
+                                            <Login />
+                                      </PublicRoute>
+                                    }
+            />
 
             <Route
                 path="/register"
-                element={<Register />}
+                element={
+                    <PublicRoute>
+                        <Register />
+                    </PublicRoute>
+                }
             />
 
             <Route
                 path="/faculty"
-                element={<FacultyDashboard />}
+                element={
+                    <ProtectedRoute
+                        roles={["FACULTY"]}
+                    >
+                        <FacultyDashboard />
+                    </ProtectedRoute>
+                }
             />
 
-            <Route
+           <Route
                 path="/student"
-                element={<StudentDashboard />}
+                element={
+                    <ProtectedRoute
+                        roles={["STUDENT"]}
+                    >
+                        <StudentDashboard />
+                    </ProtectedRoute>
+                }
             />
 
             {/* <Route
                 path="/admin"
-                element={<AdminDashboard />}
+                element={
+                    <ProtectedRoute
+                        roles={["ADMIN"]}
+                    >
+                        <AdminDashboard />
+                    </ProtectedRoute>
+                }
             /> */}
 
         </Routes>
