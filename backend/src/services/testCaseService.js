@@ -3,6 +3,7 @@ import TestCase from "../models/TestCase.js";
 import Question from "../models/Question.js";
 import AppError from "../utils/AppError.js";
 import { QUESTION_TYPE } from "../constants/questionType.js";
+import { TEST_CASE_VISIBILITY } from "../constants/testCaseVisibility.js";
 
 export const createTestCase = async (testCaseData) => {
 
@@ -52,4 +53,73 @@ export const createTestCase = async (testCaseData) => {
     const testCase = await TestCase.create(testCaseData);
 
     return testCase;
+};
+
+export const getTestCasesByQuestion = async (questionId) => {
+
+    if (!mongoose.Types.ObjectId.isValid(questionId)) {
+        throw new AppError(
+            "Invalid question ID",
+            400
+        );
+    }
+
+    const existingQuestion = await Question.findById(questionId);
+
+    if (!existingQuestion) {
+        throw new AppError(
+            "Question not found",
+            404
+        );
+    }
+
+    if (existingQuestion.questionType !== QUESTION_TYPE.CODING) {
+        throw new AppError(
+            "Test cases are only available for coding questions",
+            400
+        );
+    }
+
+    const testCases = await TestCase.find({
+        question: questionId
+    }).sort({
+        executionOrder: 1
+    });
+
+    return testCases;
+};
+
+export const getPublicTestCasesByQuestion = async (questionId) => {
+
+    if (!mongoose.Types.ObjectId.isValid(questionId)) {
+        throw new AppError(
+            "Invalid question ID",
+            400
+        );
+    }
+
+    const existingQuestion = await Question.findById(questionId);
+
+    if (!existingQuestion) {
+        throw new AppError(
+            "Question not found",
+            404
+        );
+    }
+
+    if (existingQuestion.questionType !== QUESTION_TYPE.CODING) {
+        throw new AppError(
+            "Test cases are only available for coding questions",
+            400
+        );
+    }
+
+    const testCases = await TestCase.find({
+        question: questionId,
+        visibility: TEST_CASE_VISIBILITY.PUBLIC
+    }).sort({
+        executionOrder: 1
+    });
+
+    return testCases;
 };
