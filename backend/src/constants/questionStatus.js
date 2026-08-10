@@ -1,0 +1,4 @@
+export const QUESTION_STATUS = {
+    ACTIVE: "ACTIVE",
+    INACTIVE: "INACTIVE"
+};

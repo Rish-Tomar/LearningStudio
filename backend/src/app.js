@@ -5,17 +5,16 @@ import morgan from "morgan";
 import notFound from "./middlewares/notFound.js";
 import errorHandler from "./middlewares/errorMiddleware.js";
 import authRoutes from "./routes/authRoutes.js";
+import topicRoutes from "./routes/topicRoutes.js";
+import questionRoutes from "./routes/questionRoutes.js";
+import testCaseRoutes from "./routes/testCaseRoutes.js";
 
 const app = express();
 
 
 
-// app.use(
-//     cors({
-//         origin: process.env.CLIENT_URL,
-//         credentials: true,
-//     })
-// );
+// app.use( cors({ origin: process.env.CLIENT_URL,credentials: true,}));
+
 //temperarily allow all cors
 app.use(cors());
 // app.use(helmet());
@@ -43,6 +42,9 @@ app.get("/", (req, res) => {
 
 //api routes
 app.use("/api/auth", authRoutes);
+app.use("/api/topics", topicRoutes);
+app.use("/api/questions", questionRoutes);
+app.use("/api/test-cases", testCaseRoutes);
 
 //404
 app.use(notFound);

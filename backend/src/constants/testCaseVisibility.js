@@ -1,0 +1,4 @@
+export const TEST_CASE_VISIBILITY = {
+    PUBLIC: "PUBLIC",
+    HIDDEN: "HIDDEN"
+};
