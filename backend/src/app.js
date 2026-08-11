@@ -8,6 +8,9 @@ import authRoutes from "./routes/authRoutes.js";
 import topicRoutes from "./routes/topicRoutes.js";
 import questionRoutes from "./routes/questionRoutes.js";
 import testCaseRoutes from "./routes/testCaseRoutes.js";
+import assessmentRoutes from "./routes/assessmentRoutes.js";
+import assessmentSectionRoutes from "./routes/assessmentSectionRoutes.js";
+import assessmentQuestionRoutes from "./routes/assessmentQuestionRoutes.js";
 
 const app = express();
 
@@ -45,6 +48,9 @@ app.use("/api/auth", authRoutes);
 app.use("/api/topics", topicRoutes);
 app.use("/api/questions", questionRoutes);
 app.use("/api/test-cases", testCaseRoutes);
+app.use("/api/assessments", assessmentRoutes);
+app.use("/api/assessment-sections",assessmentSectionRoutes);
+app.use("/api/assessment-questions",assessmentQuestionRoutes);
 
 //404
 app.use(notFound);
