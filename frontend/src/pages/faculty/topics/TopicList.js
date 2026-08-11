@@ -57,13 +57,14 @@ const TopicList = () => {
             <Box>
 
                 <Box
-                    display="flex"
-                    justifyContent="space-between"
-                    alignItems="center"
-                    mb={3}
+                    sx={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        mb: 3,
+                    }}
                 >
                     <Box>
-
                         <Typography
                             variant="h4"
                             fontWeight={600}
@@ -78,7 +79,6 @@ const TopicList = () => {
                         >
                             Manage your topics and their status
                         </Typography>
-
                     </Box>
 
                     <Button
@@ -87,7 +87,6 @@ const TopicList = () => {
                     >
                         Create Topic
                     </Button>
-
                 </Box>
 
                 {loading && (
