@@ -1,0 +1,28 @@
+import api from "../api/axios";
+
+const getTopics = async () => {
+
+    const response = await api.get(
+        "/topics"
+    );
+
+    return response.data;
+};
+
+const getTopicById = async (id) => {
+
+    const response = await api.get(
+        `/topics/${id}`
+    );
+
+    return response.data;
+};
+
+const topicService = {
+
+    getTopics,
+    getTopicById,
+
+};
+
+export default topicService;
