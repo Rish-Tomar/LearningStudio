@@ -3,7 +3,9 @@ import Assessment from "../models/Assessment.js";
 import User from "../models/Users.js";
 import AppError from "../utils/AppError.js";
 import { ASSESSMENT_STATUS } from "../constants/assessmentStatus.js";
-
+import AssessmentSection from "../models/AssessmentSection.js";
+import AssessmentQuestion from "../models/AssessmentQuestion.js";
+import { QUESTION_STATUS } from "../constants/questionStatus.js";
 
 export const createAssessment = async ({
     code,
@@ -91,6 +93,228 @@ export const createAssessment = async ({
         createdBy,
         status: ASSESSMENT_STATUS.DRAFT
     });
+
+
+    return assessment;
+};
+
+export const getAllAssessments = async () => {
+
+    const assessments = await Assessment.find()
+        .populate("createdBy", "name email role")
+        .sort({ createdAt: -1 });
+
+    return assessments;
+};
+
+export const getAssessmentById = async (id) => {
+
+    // 1. Validate Assessment ID
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+        throw new AppError(
+            "Invalid assessment ID",
+            400
+        );
+    }
+
+
+    // 2. Find Assessment
+    const assessment = await Assessment.findById(id)
+        .populate("createdBy", "name email role");
+
+    if (!assessment) {
+        throw new AppError(
+            "Assessment not found",
+            404
+        );
+    }
+
+
+    // 3. Get Sections
+    const sections = await AssessmentSection.find({
+        assessment: id
+    }).sort({
+        order: 1
+    });
+
+
+    // 4. Get Assessment Questions
+    const assessmentQuestions =
+        await AssessmentQuestion.find({
+            assessment: id
+        })
+        .populate(
+            "question",
+            "-correctAnswer -explanation"
+        )
+        .sort({
+            order: 1
+        });
+
+
+    // 5. Build nested response
+    const sectionsWithQuestions = sections.map(
+        (section) => {
+
+            const sectionQuestions =
+                assessmentQuestions
+                    .filter(
+                        (aq) =>
+                            aq.section.toString() ===
+                            section._id.toString()
+                    )
+                    .sort(
+                        (a, b) => a.order - b.order
+                    );
+
+
+            return {
+                ...section.toObject(),
+                questions: sectionQuestions
+            };
+        }
+    );
+
+
+    return {
+        ...assessment.toObject(),
+        sections: sectionsWithQuestions
+    };
+};
+
+export const publishAssessment = async (id) => {
+
+    // 1. Validate Assessment ID
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+        throw new AppError(
+            "Invalid assessment ID",
+            400
+        );
+    }
+
+
+    // 2. Find Assessment
+    const assessment = await Assessment.findById(id);
+
+    if (!assessment) {
+        throw new AppError(
+            "Assessment not found",
+            404
+        );
+    }
+
+
+    // 3. Assessment must be DRAFT
+    if (assessment.status !== ASSESSMENT_STATUS.DRAFT) {
+        throw new AppError(
+            "Only draft assessments can be published",
+            400
+        );
+    }
+
+
+    // 4. Get Sections
+    const sections = await AssessmentSection.find({
+        assessment: id
+    }).sort({
+        order: 1
+    });
+
+
+    // 5. Assessment must have at least one section
+    if (sections.length === 0) {
+        throw new AppError(
+            "Assessment must have at least one section before publishing",
+            400
+        );
+    }
+
+
+    // 6. Get all Assessment Questions
+    const assessmentQuestions =
+        await AssessmentQuestion.find({
+            assessment: id
+        }).populate("question");
+
+
+    // 7. Every section must contain at least one question
+    for (const section of sections) {
+
+        const sectionQuestions =
+            assessmentQuestions.filter(
+                (aq) =>
+                    aq.section.toString() ===
+                    section._id.toString()
+            );
+
+        if (sectionQuestions.length === 0) {
+            throw new AppError(
+                `Section "${section.name}" must contain at least one question`,
+                400
+            );
+        }
+    }
+
+
+    // 8. Every question must be ACTIVE
+    for (const assessmentQuestion of assessmentQuestions) {
+
+        if (
+            !assessmentQuestion.question ||
+            assessmentQuestion.question.status !== QUESTION_STATUS.ACTIVE
+        ){
+            throw new AppError(
+                "All questions in the assessment must be active",
+                400
+            );
+        }
+    }
+
+
+    // 9. Publish Assessment
+    assessment.status = ASSESSMENT_STATUS.PUBLISHED;
+
+    await assessment.save();
+
+
+    return assessment;
+};
+
+export const closeAssessment = async (id) => {
+
+    // 1. Validate Assessment ID
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+        throw new AppError(
+            "Invalid assessment ID",
+            400
+        );
+    }
+
+
+    // 2. Find Assessment
+    const assessment = await Assessment.findById(id);
+
+    if (!assessment) {
+        throw new AppError(
+            "Assessment not found",
+            404
+        );
+    }
+
+
+    // 3. Assessment must be PUBLISHED
+    if (assessment.status !== ASSESSMENT_STATUS.PUBLISHED) {
+        throw new AppError(
+            "Only published assessments can be closed",
+            400
+        );
+    }
+
+
+    // 4. Close Assessment
+    assessment.status = ASSESSMENT_STATUS.CLOSED;
+
+    await assessment.save();
 
 
     return assessment;
