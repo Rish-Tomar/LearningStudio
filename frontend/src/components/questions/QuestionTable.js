@@ -1,4 +1,5 @@
 import {
+    Chip,
     Paper,
     Table,
     TableBody,
@@ -6,17 +7,15 @@ import {
     TableContainer,
     TableHead,
     TableRow,
-    Chip,
-    Typography,
     IconButton,
     Tooltip
 } from "@mui/material";
 
-import EditIcon from "@mui/icons-material/Edit";
+import VisibilityIcon from "@mui/icons-material/Visibility";
 
 import { useNavigate } from "react-router-dom";
 
-const TopicTable = ({ topics }) => {
+const QuestionTable = ({ questions }) => {
 
     const navigate = useNavigate();
 
@@ -30,15 +29,19 @@ const TopicTable = ({ topics }) => {
                     <TableRow>
 
                         <TableCell>
+                            <strong>Question</strong>
+                        </TableCell>
+
+                        <TableCell>
+                            <strong>Type</strong>
+                        </TableCell>
+
+                        <TableCell>
                             <strong>Topic</strong>
                         </TableCell>
 
                         <TableCell>
-                            <strong>Code</strong>
-                        </TableCell>
-
-                        <TableCell>
-                            <strong>Description</strong>
+                            <strong>Difficulty</strong>
                         </TableCell>
 
                         <TableCell>
@@ -55,52 +58,66 @@ const TopicTable = ({ topics }) => {
 
                 <TableBody>
 
-                    {topics.map((topic) => (
+                    {questions.map((question) => (
 
                         <TableRow
-                            key={topic._id}
+                            key={question._id}
                             hover
                         >
 
                             <TableCell>
-                                {topic.name}
-                            </TableCell>
-
-                            <TableCell>
-                                {topic.code}
-                            </TableCell>
-
-                            <TableCell>
-                                {topic.description}
+                                {question.title}
                             </TableCell>
 
                             <TableCell>
 
                                 <Chip
-                                    label={topic.status}
+                                    label={question.questionType}
+                                    size="small"
                                     color={
-                                        topic.status === "ACTIVE"
+                                        question.questionType === "MCQ"
+                                            ? "primary"
+                                            : "secondary"
+                                    }
+                                />
+
+                            </TableCell>
+
+                            <TableCell>
+                                {question.topic?.name || "-"}
+                            </TableCell>
+
+                            <TableCell>
+                                {question.difficulty || "-"}
+                            </TableCell>
+
+                            <TableCell>
+
+                                <Chip
+                                    label={question.status}
+                                    size="small"
+                                    color={
+                                        question.status === "ACTIVE"
                                             ? "success"
                                             : "default"
                                     }
-                                    size="small"
                                 />
 
                             </TableCell>
 
                             <TableCell align="right">
 
-                                <Tooltip title="Edit Topic">
+                                <Tooltip title="View Question">
 
                                     <IconButton
                                         color="primary"
                                         onClick={() =>
                                             navigate(
-                                                `/faculty/topics/${topic._id}/edit`
+                                                `/faculty/questions/${question._id}`
                                             )
                                         }
                                     >
-                                        <EditIcon />
+                                        <VisibilityIcon />
                                     </IconButton>
 
                                 </Tooltip>
@@ -119,4 +136,4 @@ const TopicTable = ({ topics }) => {
     );
 };
 
-export default TopicTable;
+export default QuestionTable;

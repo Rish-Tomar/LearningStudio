@@ -1,8 +1,8 @@
 import {
     Box,
     Button,
+    CircularProgress,
     TextField,
-    CircularProgress
 } from "@mui/material";
 
 import SaveIcon from "@mui/icons-material/Save";
@@ -13,7 +13,8 @@ const TopicForm = ({
     onChange,
     onSubmit,
     onCancel,
-    loading
+    loading = false,
+    submitLabel = "Create Topic",
 }) => {
 
     return (
@@ -69,22 +70,28 @@ const TopicForm = ({
                     variant="outlined"
                     startIcon={<CancelIcon />}
                     onClick={onCancel}
+                    disabled={loading}
                 >
                     Cancel
                 </Button>
 
                 <Button
-                type="submit"
-                variant="contained"
-                startIcon={
-                    loading
-                        ? <CircularProgress size={20} color="inherit" />
-                        : <SaveIcon />
-                }
-                disabled={loading}
-            >
-                {loading ? "Creating..." : "Create Topic"}
-            </Button>
+                    type="submit"
+                    variant="contained"
+                    startIcon={
+                        loading ? (
+                            <CircularProgress
+                                size={20}
+                                color="inherit"
+                            />
+                        ) : (
+                            <SaveIcon />
+                        )
+                    }
+                    disabled={loading}
+                >
+                    {loading ? "Saving..." : submitLabel}
+                </Button>
 
             </Box>
 

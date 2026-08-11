@@ -28,11 +28,22 @@ const createTopic = async (topicData) => {
     return response.data;
 };
 
+const updateTopic = async (id, topicData) => {
+
+    const response = await api.patch(
+        `/topics/${id}`,
+        topicData
+    );
+
+    return response.data;
+};
+
 const topicService = {
 
     getTopics,
     getTopicById,
-    createTopic
+    createTopic,
+    updateTopic
 
 };
 
