@@ -9,8 +9,11 @@ import AddIcon from "@mui/icons-material/Add";
 import DashboardLayout from "../../../layouts/DashboardLayout";
 import topicService from "../../../services/topicService";
 import TopicTable from "../../../components/topics/TopicTable";
+import { useNavigate } from "react-router-dom";
 
 const TopicList = () => {
+
+    const navigate = useNavigate();
 
     const [topics, setTopics] = useState([]);
 
@@ -84,6 +87,7 @@ const TopicList = () => {
                     <Button
                         variant="contained"
                         startIcon={<AddIcon />}
+                        onClick={() => navigate("/faculty/topics/create")}
                     >
                         Create Topic
                     </Button>

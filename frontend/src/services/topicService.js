@@ -18,11 +18,24 @@ const getTopicById = async (id) => {
     return response.data;
 };
 
+const createTopic = async (topicData) => {
+
+    const response = await api.post(
+        "/topics",
+        topicData
+    );
+
+    return response.data;
+};
+
 const topicService = {
 
     getTopics,
     getTopicById,
+    createTopic
 
 };
+
+
 
 export default topicService;
