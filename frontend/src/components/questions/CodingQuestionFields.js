@@ -19,23 +19,40 @@ const LANGUAGES = [
 const CodingQuestionFields = ({
     formData,
     setFormData,
+    validationErrors,
 }) => {
 
 
-    const handleConstraintsChange = (event) => {
+    const handleConstraintsChange = (
+        event
+    ) => {
 
-        const value = event.target.value;
+        const value =
+            event.target.value;
+
 
         const constraints =
             value
                 .split("\n")
-                .map((item) => item.trim())
-                .filter((item) => item !== "");
+                .map(
+                    (item) =>
+                        item.trim()
+                )
+                .filter(
+                    (item) =>
+                        item !== ""
+                );
 
-        setFormData((previousData) => ({
-            ...previousData,
-            constraints,
-        }));
+
+        setFormData(
+            (previousData) => ({
+
+                ...previousData,
+
+                constraints,
+
+            })
+        );
 
     };
 
@@ -45,51 +62,72 @@ const CodingQuestionFields = ({
         checked
     ) => {
 
-        setFormData((previousData) => {
+        setFormData(
+            (previousData) => {
 
-            const existingLanguages =
-                previousData.allowedLanguages || [];
+                const existingLanguages =
+                    previousData
+                        .allowedLanguages || [];
 
-            let updatedLanguages;
 
-            if (checked) {
+                let updatedLanguages;
 
-                updatedLanguages = [
-                    ...existingLanguages,
-                    language,
-                ];
 
-            } else {
+                if (checked) {
 
-                updatedLanguages =
-                    existingLanguages.filter(
-                        (item) =>
-                            item !== language
-                    );
+                    updatedLanguages = [
+
+                        ...existingLanguages,
+
+                        language,
+
+                    ];
+
+                } else {
+
+                    updatedLanguages =
+                        existingLanguages.filter(
+                            (item) =>
+                                item !== language
+                        );
+
+                }
+
+
+                return {
+
+                    ...previousData,
+
+                    allowedLanguages:
+                        updatedLanguages,
+
+                };
 
             }
-
-            return {
-                ...previousData,
-                allowedLanguages: updatedLanguages,
-            };
-
-        });
+        );
 
     };
 
 
-    const handleInputChange = (event) => {
+    const handleInputChange = (
+        event
+    ) => {
 
         const {
             name,
             value,
         } = event.target;
 
-        setFormData((previousData) => ({
-            ...previousData,
-            [name]: value,
-        }));
+
+        setFormData(
+            (previousData) => ({
+
+                ...previousData,
+
+                [name]: value,
+
+            })
+        );
 
     };
 
@@ -122,7 +160,9 @@ const CodingQuestionFields = ({
                     "Enter one constraint per line"
                 }
                 value={
-                    formData.constraints?.join("\n") || ""
+                    formData.constraints?.join(
+                        "\n"
+                    ) || ""
                 }
                 onChange={
                     handleConstraintsChange
@@ -143,7 +183,8 @@ const CodingQuestionFields = ({
                 label="Input Format"
                 name="inputFormat"
                 value={
-                    formData.inputFormat || ""
+                    formData.inputFormat ||
+                    ""
                 }
                 onChange={
                     handleInputChange
@@ -152,6 +193,15 @@ const CodingQuestionFields = ({
                 multiline
                 rows={4}
                 fullWidth
+                error={
+                    Boolean(
+                        validationErrors.inputFormat
+                    )
+                }
+                helperText={
+                    validationErrors.inputFormat ||
+                    ""
+                }
                 sx={{ mb: 3 }}
             />
 
@@ -162,7 +212,8 @@ const CodingQuestionFields = ({
                 label="Output Format"
                 name="outputFormat"
                 value={
-                    formData.outputFormat || ""
+                    formData.outputFormat ||
+                    ""
                 }
                 onChange={
                     handleInputChange
@@ -171,6 +222,15 @@ const CodingQuestionFields = ({
                 multiline
                 rows={4}
                 fullWidth
+                error={
+                    Boolean(
+                        validationErrors.outputFormat
+                    )
+                }
+                helperText={
+                    validationErrors.outputFormat ||
+                    ""
+                }
                 sx={{ mb: 3 }}
             />
 
@@ -196,9 +256,7 @@ const CodingQuestionFields = ({
                 </Typography>
 
 
-                <FormGroup
-                    row
-                >
+                <FormGroup row>
 
                     {LANGUAGES.map(
                         (language) => (
@@ -212,25 +270,45 @@ const CodingQuestionFields = ({
                                                 .allowedLanguages
                                                 ?.includes(
                                                     language
-                                                ) || false
+                                                ) ||
+                                            false
                                         }
-                                        onChange={(
-                                            event
-                                        ) =>
-                                            handleLanguageChange(
-                                                language,
-                                                event.target.checked
-                                            )
+                                        onChange={
+                                            (event) =>
+                                                handleLanguageChange(
+                                                    language,
+                                                    event
+                                                        .target
+                                                        .checked
+                                                )
                                         }
                                     />
                                 }
-                                label={language}
+                                label={
+                                    language
+                                }
                             />
 
                         )
                     )}
 
                 </FormGroup>
+
+
+                {validationErrors.allowedLanguages && (
+
+                    <Typography
+                        color="error"
+                        variant="body2"
+                        sx={{ mt: 1 }}
+                    >
+                        {
+                            validationErrors
+                                .allowedLanguages
+                        }
+                    </Typography>
+
+                )}
 
             </Box>
 
@@ -242,7 +320,8 @@ const CodingQuestionFields = ({
                 name="executionTimeLimit"
                 type="number"
                 value={
-                    formData.executionTimeLimit || ""
+                    formData.executionTimeLimit ||
+                    ""
                 }
                 onChange={
                     handleInputChange
@@ -252,7 +331,15 @@ const CodingQuestionFields = ({
                 inputProps={{
                     min: 100,
                 }}
+                error={
+                    Boolean(
+                        validationErrors
+                            .executionTimeLimit
+                    )
+                }
                 helperText={
+                    validationErrors
+                        .executionTimeLimit ||
                     "Minimum: 100 ms"
                 }
                 sx={{ mb: 3 }}
@@ -266,7 +353,8 @@ const CodingQuestionFields = ({
                 name="memoryLimit"
                 type="number"
                 value={
-                    formData.memoryLimit || ""
+                    formData.memoryLimit ||
+                    ""
                 }
                 onChange={
                     handleInputChange
@@ -276,7 +364,15 @@ const CodingQuestionFields = ({
                 inputProps={{
                     min: 16,
                 }}
+                error={
+                    Boolean(
+                        validationErrors
+                            .memoryLimit
+                    )
+                }
                 helperText={
+                    validationErrors
+                        .memoryLimit ||
                     "Minimum: 16 MB"
                 }
             />

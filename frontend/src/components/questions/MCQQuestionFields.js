@@ -2,6 +2,7 @@ import {
     Box,
     Button,
     FormControl,
+    FormHelperText,
     InputLabel,
     MenuItem,
     Select,
@@ -16,9 +17,14 @@ import DeleteIcon from "@mui/icons-material/Delete";
 const MCQQuestionFields = ({
     formData,
     setFormData,
+    validationErrors,
 }) => {
 
-    const handleOptionChange = (index, value) => {
+
+    const handleOptionChange = (
+        index,
+        value
+    ) => {
 
         setFormData((previousData) => {
 
@@ -27,13 +33,19 @@ const MCQQuestionFields = ({
             ];
 
             updatedOptions[index] = {
+
                 ...updatedOptions[index],
+
                 text: value,
+
             };
 
             return {
+
                 ...previousData,
+
                 options: updatedOptions,
+
             };
 
         });
@@ -48,25 +60,38 @@ const MCQQuestionFields = ({
             const existingOptions =
                 previousData.options || [];
 
-            if (existingOptions.length >= 6) {
+
+            if (
+                existingOptions.length >= 6
+            ) {
+
                 return previousData;
+
             }
+
 
             const nextKey =
                 String.fromCharCode(
-                    65 + existingOptions.length
+                    65 +
+                    existingOptions.length
                 );
 
+
             return {
+
                 ...previousData,
 
                 options: [
+
                     ...existingOptions,
+
                     {
                         key: nextKey,
                         text: "",
                     },
+
                 ],
+
             };
 
         });
@@ -81,9 +106,15 @@ const MCQQuestionFields = ({
             const existingOptions =
                 previousData.options || [];
 
-            if (existingOptions.length <= 2) {
+
+            if (
+                existingOptions.length <= 2
+            ) {
+
                 return previousData;
+
             }
+
 
             const updatedOptions =
                 existingOptions.filter(
@@ -91,33 +122,49 @@ const MCQQuestionFields = ({
                         optionIndex !== index
                 );
 
+
             const reindexedOptions =
                 updatedOptions.map(
                     (option, optionIndex) => ({
+
                         ...option,
+
                         key: String.fromCharCode(
-                            65 + optionIndex
+                            65 +
+                            optionIndex
                         ),
+
                     })
                 );
+
 
             let correctAnswer =
                 previousData.correctAnswer;
 
+
             const correctAnswerExists =
                 reindexedOptions.some(
                     (option) =>
-                        option.key === correctAnswer
+                        option.key ===
+                        correctAnswer
                 );
 
+
             if (!correctAnswerExists) {
+
                 correctAnswer = "";
+
             }
 
+
             return {
+
                 ...previousData,
+
                 options: reindexedOptions,
+
                 correctAnswer,
+
             };
 
         });
@@ -125,24 +172,38 @@ const MCQQuestionFields = ({
     };
 
 
-    const handleCorrectAnswerChange = (event) => {
+    const handleCorrectAnswerChange =
+        (event) => {
 
-        setFormData((previousData) => ({
-            ...previousData,
-            correctAnswer: event.target.value,
-        }));
+            setFormData(
+                (previousData) => ({
 
-    };
+                    ...previousData,
+
+                    correctAnswer:
+                        event.target.value,
+
+                })
+            );
+
+        };
 
 
-    const handleExplanationChange = (event) => {
+    const handleExplanationChange =
+        (event) => {
 
-        setFormData((previousData) => ({
-            ...previousData,
-            explanation: event.target.value,
-        }));
+            setFormData(
+                (previousData) => ({
 
-    };
+                    ...previousData,
+
+                    explanation:
+                        event.target.value,
+
+                })
+            );
+
+        };
 
 
     return (
@@ -176,6 +237,19 @@ const MCQQuestionFields = ({
             </Typography>
 
 
+            {validationErrors.options && (
+
+                <Typography
+                    color="error"
+                    variant="body2"
+                    sx={{ mb: 2 }}
+                >
+                    {validationErrors.options}
+                </Typography>
+
+            )}
+
+
             <Box
                 sx={{
                     display: "flex",
@@ -207,13 +281,18 @@ const MCQQuestionFields = ({
 
 
                             <TextField
-                                label={`Option ${option.key}`}
-                                value={option.text}
-                                onChange={(event) =>
-                                    handleOptionChange(
-                                        index,
-                                        event.target.value
-                                    )
+                                label={
+                                    `Option ${option.key}`
+                                }
+                                value={
+                                    option.text
+                                }
+                                onChange={
+                                    (event) =>
+                                        handleOptionChange(
+                                            index,
+                                            event.target.value
+                                        )
                                 }
                                 required
                                 fullWidth
@@ -224,12 +303,18 @@ const MCQQuestionFields = ({
                                 type="button"
                                 color="error"
                                 variant="outlined"
-                                startIcon={<DeleteIcon />}
+                                startIcon={
+                                    <DeleteIcon />
+                                }
                                 onClick={() =>
-                                    removeOption(index)
+                                    removeOption(
+                                        index
+                                    )
                                 }
                                 disabled={
-                                    formData.options.length <= 2
+                                    formData
+                                        .options
+                                        .length <= 2
                                 }
                             >
                                 Remove
@@ -248,7 +333,9 @@ const MCQQuestionFields = ({
             <Button
                 type="button"
                 variant="outlined"
-                startIcon={<AddIcon />}
+                startIcon={
+                    <AddIcon />
+                }
                 onClick={addOption}
                 disabled={
                     formData.options?.length >= 6
@@ -264,6 +351,11 @@ const MCQQuestionFields = ({
             <FormControl
                 fullWidth
                 required
+                error={
+                    Boolean(
+                        validationErrors.correctAnswer
+                    )
+                }
                 sx={{ mt: 3 }}
             >
 
@@ -273,7 +365,8 @@ const MCQQuestionFields = ({
 
                 <Select
                     value={
-                        formData.correctAnswer || ""
+                        formData.correctAnswer ||
+                        ""
                     }
                     label="Correct Answer"
                     onChange={
@@ -299,6 +392,17 @@ const MCQQuestionFields = ({
                     )}
 
                 </Select>
+
+                {validationErrors.correctAnswer && (
+
+                    <FormHelperText>
+                        {
+                            validationErrors
+                                .correctAnswer
+                        }
+                    </FormHelperText>
+
+                )}
 
             </FormControl>
 

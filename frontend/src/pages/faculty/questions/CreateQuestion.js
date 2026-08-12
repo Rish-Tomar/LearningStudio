@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 
 import {
+    Alert,
     Box,
     Card,
     CardContent,
@@ -16,11 +17,20 @@ import QuestionForm
 import topicService
     from "../../../services/topicService";
 
+import questionService
+    from "../../../services/questionService";
+
+import { useNavigate } from "react-router-dom";
+
 
 const CreateQuestion = () => {
 
+    const navigate = useNavigate();
+
+
     const [formData, setFormData] = useState({
 
+        // Common fields
         code: "",
         title: "",
         description: "",
@@ -28,6 +38,7 @@ const CreateQuestion = () => {
         questionType: "",
         difficulty: "",
 
+        // MCQ fields
         options: [
             {
                 key: "A",
@@ -40,9 +51,9 @@ const CreateQuestion = () => {
         ],
 
         correctAnswer: "",
-
         explanation: "",
-        // Coding
+
+        // Coding fields
         constraints: [],
         inputFormat: "",
         outputFormat: "",
@@ -55,10 +66,25 @@ const CreateQuestion = () => {
 
     const [topics, setTopics] = useState([]);
 
-    const [loadingTopics, setLoadingTopics] = useState(true);
+    const [loadingTopics, setLoadingTopics] =
+        useState(true);
 
-    const [error, setError] = useState("");
+    const [submitting, setSubmitting] =
+        useState(false);
 
+    const [error, setError] =
+        useState("");
+
+    const [success, setSuccess] =
+        useState("");
+
+    const [validationErrors, setValidationErrors] =
+        useState({});
+
+
+    /*
+     * Fetch Topics
+     */
 
     useEffect(() => {
 
@@ -72,11 +98,6 @@ const CreateQuestion = () => {
 
                 const response =
                     await topicService.getTopics();
-
-                console.log(
-                    "Topics fetched for question form:",
-                    response
-                );
 
                 setTopics(response.data);
 
@@ -105,6 +126,10 @@ const CreateQuestion = () => {
     }, []);
 
 
+    /*
+     * Handle Common Field Changes
+     */
+
     const handleChange = (event) => {
 
         const {
@@ -119,6 +144,433 @@ const CreateQuestion = () => {
             [name]: value,
 
         }));
+
+
+        // Remove field-level validation
+        // error when user changes the field.
+
+        setValidationErrors(
+            (previousErrors) => {
+
+                if (!previousErrors[name]) {
+
+                    return previousErrors;
+
+                }
+
+                const updatedErrors = {
+                    ...previousErrors,
+                };
+
+                delete updatedErrors[name];
+
+                return updatedErrors;
+
+            }
+        );
+
+    };
+
+
+    /*
+     * Build Backend Payload
+     */
+
+    const buildQuestionPayload = () => {
+
+        const payload = {
+
+            code:
+                formData.code.trim(),
+
+            title:
+                formData.title.trim(),
+
+            description:
+                formData.description.trim(),
+
+            topic:
+                formData.topic,
+
+            questionType:
+                formData.questionType,
+
+            difficulty:
+                formData.difficulty,
+
+        };
+
+
+        /*
+         * MCQ
+         */
+
+        if (
+            formData.questionType === "MCQ"
+        ) {
+
+            payload.options =
+                formData.options.map(
+                    (option) => ({
+
+                        key: option.key,
+
+                        text:
+                            option.text.trim(),
+
+                    })
+                );
+
+            payload.correctAnswer =
+                formData.correctAnswer;
+
+            payload.explanation =
+                formData.explanation.trim();
+
+        }
+
+
+        /*
+         * CODING
+         */
+
+        if (
+            formData.questionType === "CODING"
+        ) {
+
+            payload.constraints =
+                formData.constraints;
+
+            payload.inputFormat =
+                formData.inputFormat.trim();
+
+            payload.outputFormat =
+                formData.outputFormat.trim();
+
+            payload.allowedLanguages =
+                formData.allowedLanguages;
+
+            payload.executionTimeLimit =
+                Number(
+                    formData.executionTimeLimit
+                );
+
+            payload.memoryLimit =
+                Number(
+                    formData.memoryLimit
+                );
+
+        }
+
+
+        return payload;
+
+    };
+
+
+    /*
+     * Validate Question
+     */
+
+    const validateQuestion = () => {
+
+        const errors = {};
+
+
+        /*
+         * Common
+         */
+
+        if (!formData.code.trim()) {
+
+            errors.code =
+                "Question code is required";
+
+        }
+
+        if (!formData.title.trim()) {
+
+            errors.title =
+                "Question title is required";
+
+        }
+
+        if (!formData.description.trim()) {
+
+            errors.description =
+                "Question description is required";
+
+        }
+
+        if (!formData.topic) {
+
+            errors.topic =
+                "Topic is required";
+
+        }
+
+        if (!formData.questionType) {
+
+            errors.questionType =
+                "Question type is required";
+
+        }
+
+        if (!formData.difficulty) {
+
+            errors.difficulty =
+                "Difficulty is required";
+
+        }
+
+
+        /*
+         * MCQ
+         */
+
+        if (
+            formData.questionType === "MCQ"
+        ) {
+
+            if (
+                !formData.options ||
+                formData.options.length < 2
+            ) {
+
+                errors.options =
+                    "MCQ must have at least 2 options";
+
+            }
+
+
+            const hasEmptyOption =
+                formData.options?.some(
+                    (option) =>
+                        !option.text.trim()
+                );
+
+
+            if (hasEmptyOption) {
+
+                errors.options =
+                    "All MCQ options must contain text";
+
+            }
+
+
+            if (!formData.correctAnswer) {
+
+                errors.correctAnswer =
+                    "Correct answer is required";
+
+            }
+
+
+            const correctAnswerExists =
+                formData.options?.some(
+                    (option) =>
+                        option.key ===
+                        formData.correctAnswer
+                );
+
+
+            if (
+                formData.correctAnswer &&
+                !correctAnswerExists
+            ) {
+
+                errors.correctAnswer =
+                    "Correct answer must match an option";
+
+            }
+
+        }
+
+
+        /*
+         * CODING
+         */
+
+        if (
+            formData.questionType === "CODING"
+        ) {
+
+            if (
+                !formData.inputFormat.trim()
+            ) {
+
+                errors.inputFormat =
+                    "Input format is required";
+
+            }
+
+
+            if (
+                !formData.outputFormat.trim()
+            ) {
+
+                errors.outputFormat =
+                    "Output format is required";
+
+            }
+
+
+            if (
+                !formData.allowedLanguages ||
+                formData.allowedLanguages.length === 0
+            ) {
+
+                errors.allowedLanguages =
+                    "Select at least one allowed language";
+
+            }
+
+
+            const executionTime =
+                Number(
+                    formData.executionTimeLimit
+                );
+
+
+            if (
+                !formData.executionTimeLimit ||
+                Number.isNaN(executionTime) ||
+                executionTime < 100
+            ) {
+
+                errors.executionTimeLimit =
+                    "Execution time must be at least 100 ms";
+
+            }
+
+
+            const memoryLimit =
+                Number(
+                    formData.memoryLimit
+                );
+
+
+            if (
+                !formData.memoryLimit ||
+                Number.isNaN(memoryLimit) ||
+                memoryLimit < 16
+            ) {
+
+                errors.memoryLimit =
+                    "Memory limit must be at least 16 MB";
+
+            }
+
+        }
+
+
+        return errors;
+
+    };
+
+
+    /*
+     * Submit Question
+     */
+
+    const handleSubmit = async (event) => {
+
+        event.preventDefault();
+
+        setError("");
+
+        setSuccess("");
+
+        setValidationErrors({});
+
+
+        /*
+         * Frontend validation
+         */
+
+        const errors =
+            validateQuestion();
+
+
+        if (
+            Object.keys(errors).length > 0
+        ) {
+
+            setValidationErrors(errors);
+
+            return;
+
+        }
+
+
+        /*
+         * Build payload
+         */
+
+        const payload =
+            buildQuestionPayload();
+
+
+        try {
+
+            setSubmitting(true);
+
+
+            /*
+             * POST /api/questions
+             */
+
+            const response =
+                await questionService.createQuestion(
+                    payload
+                );
+
+
+            console.log(
+                "Question created successfully:",
+                response
+            );
+
+
+            setSuccess(
+                "Question created successfully."
+            );
+
+
+            /*
+             * Navigate to Question List
+             *
+             * Small delay allows the user
+             * to see the success message.
+             */
+
+            setTimeout(() => {
+
+                navigate(
+                    "/faculty/questions"
+                );
+
+            }, 800);
+
+
+        } catch (error) {
+
+            console.error(
+                "Failed to create question:",
+                error
+            );
+
+
+            setError(
+                error.response?.data?.message ||
+                "Failed to create question"
+            );
+
+        } finally {
+
+            setSubmitting(false);
+
+        }
 
     };
 
@@ -151,16 +603,30 @@ const CreateQuestion = () => {
                 </Box>
 
 
-                {/* Error */}
+                {/* Success */}
+
+                {success && (
+
+                    <Alert
+                        severity="success"
+                        sx={{ mb: 2 }}
+                    >
+                        {success}
+                    </Alert>
+
+                )}
+
+
+                {/* Backend Error */}
 
                 {error && (
 
-                    <Typography
-                        color="error"
+                    <Alert
+                        severity="error"
                         sx={{ mb: 2 }}
                     >
                         {error}
-                    </Typography>
+                    </Alert>
 
                 )}
 
@@ -177,6 +643,7 @@ const CreateQuestion = () => {
                         }}
                     >
                         <CircularProgress />
+
                     </Box>
 
                 ) : (
@@ -190,6 +657,11 @@ const CreateQuestion = () => {
                                 topics={topics}
                                 onChange={handleChange}
                                 setFormData={setFormData}
+                                onSubmit={handleSubmit}
+                                validationErrors={
+                                    validationErrors
+                                }
+                                submitting={submitting}
                             />
 
                         </CardContent>

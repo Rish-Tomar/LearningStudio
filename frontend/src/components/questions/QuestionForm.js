@@ -1,25 +1,35 @@
 import {
     Box,
+    Button,
     FormControl,
+    FormHelperText,
     InputLabel,
     MenuItem,
     Select,
     TextField,
 } from "@mui/material";
-import MCQQuestionFields from "./MCQQuestionFields";
+
+import MCQQuestionFields
+    from "./MCQQuestionFields";
+
 import CodingQuestionFields
     from "./CodingQuestionFields";
+
 
 const QuestionForm = ({
     formData,
     topics,
     onChange,
-    setFormData
+    setFormData,
+    onSubmit,
+    validationErrors,
 }) => {
 
     return (
 
         <Box
+            component="form"
+            onSubmit={onSubmit}
             sx={{
                 display: "flex",
                 flexDirection: "column",
@@ -36,6 +46,14 @@ const QuestionForm = ({
                 onChange={onChange}
                 required
                 fullWidth
+                error={
+                    Boolean(
+                        validationErrors.code
+                    )
+                }
+                helperText={
+                    validationErrors.code || ""
+                }
             />
 
 
@@ -48,6 +66,14 @@ const QuestionForm = ({
                 onChange={onChange}
                 required
                 fullWidth
+                error={
+                    Boolean(
+                        validationErrors.title
+                    )
+                }
+                helperText={
+                    validationErrors.title || ""
+                }
             />
 
 
@@ -62,6 +88,14 @@ const QuestionForm = ({
                 multiline
                 rows={4}
                 fullWidth
+                error={
+                    Boolean(
+                        validationErrors.description
+                    )
+                }
+                helperText={
+                    validationErrors.description || ""
+                }
             />
 
 
@@ -70,6 +104,11 @@ const QuestionForm = ({
             <FormControl
                 fullWidth
                 required
+                error={
+                    Boolean(
+                        validationErrors.topic
+                    )
+                }
             >
 
                 <InputLabel>
@@ -100,6 +139,14 @@ const QuestionForm = ({
 
                 </Select>
 
+                {validationErrors.topic && (
+
+                    <FormHelperText>
+                        {validationErrors.topic}
+                    </FormHelperText>
+
+                )}
+
             </FormControl>
 
 
@@ -108,6 +155,11 @@ const QuestionForm = ({
             <FormControl
                 fullWidth
                 required
+                error={
+                    Boolean(
+                        validationErrors.questionType
+                    )
+                }
             >
 
                 <InputLabel>
@@ -135,6 +187,14 @@ const QuestionForm = ({
 
                 </Select>
 
+                {validationErrors.questionType && (
+
+                    <FormHelperText>
+                        {validationErrors.questionType}
+                    </FormHelperText>
+
+                )}
+
             </FormControl>
 
 
@@ -143,6 +203,11 @@ const QuestionForm = ({
             <FormControl
                 fullWidth
                 required
+                error={
+                    Boolean(
+                        validationErrors.difficulty
+                    )
+                }
             >
 
                 <InputLabel>
@@ -174,27 +239,65 @@ const QuestionForm = ({
 
                 </Select>
 
-                {formData.questionType === "MCQ" && (
+                {validationErrors.difficulty && (
 
-                    <MCQQuestionFields
-                        formData={formData}
-                        setFormData={setFormData}
-                    />
-
-
-
-                )}
-
-                {formData.questionType === "CODING" && (
-
-                    <CodingQuestionFields
-                        formData={formData}
-                        setFormData={setFormData}
-                    />
+                    <FormHelperText>
+                        {validationErrors.difficulty}
+                    </FormHelperText>
 
                 )}
 
             </FormControl>
+
+
+            {/* MCQ Fields */}
+
+            {formData.questionType === "MCQ" && (
+
+                <MCQQuestionFields
+                    formData={formData}
+                    setFormData={setFormData}
+                    validationErrors={
+                        validationErrors
+                    }
+                />
+
+            )}
+
+
+            {/* Coding Fields */}
+
+            {formData.questionType === "CODING" && (
+
+                <CodingQuestionFields
+                    formData={formData}
+                    setFormData={setFormData}
+                    validationErrors={
+                        validationErrors
+                    }
+                />
+
+            )}
+
+
+            {/* Submit */}
+
+            <Box
+                sx={{
+                    display: "flex",
+                    justifyContent: "flex-end",
+                    mt: 2,
+                }}
+            >
+
+                <Button
+                    type="submit"
+                    variant="contained"
+                >
+                    Create Question
+                </Button>
+
+            </Box>
 
         </Box>
 
