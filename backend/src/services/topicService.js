@@ -117,6 +117,43 @@ export const getAllTopics = async () => {
     return topics;
 };
 
+export const getTopicsByModule = async (moduleId) => {
+
+    if (!mongoose.Types.ObjectId.isValid(moduleId)) {
+        throw new AppError(
+            "Invalid module ID",
+            400
+        );
+    }
+
+    const existingModule = await Module.findById(moduleId);
+
+    if (!existingModule) {
+        throw new AppError(
+            "Module not found",
+            404
+        );
+    }
+
+    const topics = await Topic.find({
+        module: moduleId
+    })
+        .populate({
+            path: "module",
+            select: "name code sequence course",
+            populate: {
+                path: "course",
+                select: "name code status"
+            }
+        })
+        .sort({
+            sequence: 1,
+            createdAt: 1
+        });
+
+    return topics;
+};
+
 export const getTopicById = async (id) => {
     
 

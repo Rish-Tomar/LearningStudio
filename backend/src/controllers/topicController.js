@@ -2,6 +2,7 @@ import asyncHandler from "../utils/asyncHandler.js";
 import { createTopic as createTopicService, 
          getAllTopics as getAllTopicsService, 
          getTopicById as getTopicByIdService,
+         getTopicsByModule as getTopicsByModuleService,
          updateTopicStatus as updateTopicStatusService } from "../services/topicService.js";
  
 export const createTopic = asyncHandler(async (req, res) => {
@@ -26,6 +27,20 @@ export const createTopic = asyncHandler(async (req, res) => {
 export const getAllTopics = asyncHandler(async (req, res) => {
 
     const topics = await getAllTopicsService();
+
+    res.status(200).json({
+        success: true,
+        message: "Topics fetched successfully",
+        data: topics
+    });
+});
+
+export const getTopicsByModule = asyncHandler(async (req, res) => {
+
+    const { moduleId } = req.params;
+
+    const topics =
+        await getTopicsByModuleService(moduleId);
 
     res.status(200).json({
         success: true,

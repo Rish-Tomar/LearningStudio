@@ -1,11 +1,13 @@
 import express from "express";
-import { createTopic,getAllTopics, getTopicById,updateTopicStatus } from "../controllers/topicController.js";
+import { createTopic,getAllTopics, getTopicById,getTopicsByModule,updateTopicStatus } from "../controllers/topicController.js";
 
 const router = express.Router();
 
 router.post("/", createTopic);
 
 router.get("/", getAllTopics);
+
+router.get("/module/:moduleId", getTopicsByModule);
 
 router.get("/:id",getTopicById)
 
