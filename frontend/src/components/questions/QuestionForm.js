@@ -23,6 +23,8 @@ const QuestionForm = ({
     setFormData,
     onSubmit,
     validationErrors,
+    topicLocked = false,
+    submitting = false,
 }) => {
 
     return (
@@ -120,6 +122,7 @@ const QuestionForm = ({
                     value={formData.topic}
                     label="Topic"
                     onChange={onChange}
+                    disabled={topicLocked}
                 >
 
                     <MenuItem value="">
@@ -139,7 +142,16 @@ const QuestionForm = ({
 
                 </Select>
 
-                {validationErrors.topic && (
+                {topicLocked && (
+
+                    <FormHelperText>
+                        Topic is selected from the current context.
+                    </FormHelperText>
+
+                )}
+
+                {!topicLocked &&
+                    validationErrors.topic && (
 
                     <FormHelperText>
                         {validationErrors.topic}
@@ -293,8 +305,11 @@ const QuestionForm = ({
                 <Button
                     type="submit"
                     variant="contained"
+                    disabled={submitting}
                 >
-                    Create Question
+                    {submitting
+                        ? "Creating..."
+                        : "Create Question"}
                 </Button>
 
             </Box>

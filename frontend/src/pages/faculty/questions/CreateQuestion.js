@@ -20,12 +20,19 @@ import topicService
 import questionService
     from "../../../services/questionService";
 
-import { useNavigate } from "react-router-dom";
+import {
+    useNavigate,
+    useSearchParams,
+} from "react-router-dom";
 
 
 const CreateQuestion = () => {
 
     const navigate = useNavigate();
+
+    const [searchParams] = useSearchParams();
+
+    const topicFromUrl = searchParams.get("topic");
 
 
     const [formData, setFormData] = useState({
@@ -34,7 +41,7 @@ const CreateQuestion = () => {
         code: "",
         title: "",
         description: "",
-        topic: "",
+        topic: topicFromUrl || "",
         questionType: "",
         difficulty: "",
 
@@ -80,6 +87,17 @@ const CreateQuestion = () => {
 
     const [validationErrors, setValidationErrors] =
         useState({});
+
+
+    /*
+     * Topic Context
+     *
+     * If a topic is provided through the URL,
+     * the question is being created from
+     * Topic → Manage Questions.
+     */
+
+    const topicLocked = Boolean(topicFromUrl);
 
 
     /*
@@ -137,6 +155,22 @@ const CreateQuestion = () => {
             value,
         } = event.target;
 
+
+        /*
+         * Topic is locked when the page
+         * was opened from Topic context.
+         */
+
+        if (
+            name === "topic" &&
+            topicLocked
+        ) {
+
+            return;
+
+        }
+
+
         setFormData((previousData) => ({
 
             ...previousData,
@@ -146,8 +180,10 @@ const CreateQuestion = () => {
         }));
 
 
-        // Remove field-level validation
-        // error when user changes the field.
+        /*
+         * Remove field-level validation
+         * error when user changes the field.
+         */
 
         setValidationErrors(
             (previousErrors) => {
@@ -538,17 +574,26 @@ const CreateQuestion = () => {
 
 
             /*
-             * Navigate to Question List
-             *
-             * Small delay allows the user
-             * to see the success message.
+             * Return to the topic's
+             * question list when created
+             * from Topic context.
              */
 
             setTimeout(() => {
 
-                navigate(
-                    "/faculty/questions"
-                );
+                if (topicLocked) {
+
+                    navigate(
+                        `/faculty/topics/${topicFromUrl}/questions`
+                    );
+
+                } else {
+
+                    navigate(
+                        "/faculty/questions"
+                    );
+
+                }
 
             }, 800);
 
@@ -661,6 +706,7 @@ const CreateQuestion = () => {
                                 validationErrors={
                                     validationErrors
                                 }
+                                topicLocked={topicLocked}
                                 submitting={submitting}
                             />
 

@@ -170,31 +170,58 @@ const ModuleTopicList = () => {
                                     }}
                                 >
 
-                                    <Typography
-                                        variant="h6"
-                                        fontWeight={600}
+                                    <Box
+                                        sx={{
+                                            display: "flex",
+                                            justifyContent: "space-between",
+                                            alignItems: "center",
+                                            gap: 2,
+                                        }}
                                     >
-                                        {topic.sequence}.{" "}
-                                        {topic.name}
-                                    </Typography>
 
-                                    <Typography
-                                        variant="body2"
-                                        color="text.secondary"
-                                    >
-                                        {topic.code}
-                                    </Typography>
+                                        <Box>
 
-                                    {topic.description && (
+                                            <Typography
+                                                variant="h6"
+                                                fontWeight={600}
+                                            >
+                                                {topic.sequence}.{" "}
+                                                {topic.name}
+                                            </Typography>
 
-                                        <Typography
-                                            variant="body2"
-                                            sx={{ mt: 1 }}
+                                            <Typography
+                                                variant="body2"
+                                                color="text.secondary"
+                                            >
+                                                {topic.code}
+                                            </Typography>
+
+                                            {topic.description && (
+
+                                                <Typography
+                                                    variant="body2"
+                                                    sx={{ mt: 1 }}
+                                                >
+                                                    {topic.description}
+                                                </Typography>
+
+                                            )}
+
+                                        </Box>
+
+                                        <Button
+                                            variant="outlined"
+                                            size="small"
+                                            onClick={() =>
+                                                navigate(
+                                                    `/faculty/topics/${topic._id}/questions`
+                                                )
+                                            }
                                         >
-                                            {topic.description}
-                                        </Typography>
+                                            Manage Questions
+                                        </Button>
 
-                                    )}
+                                    </Box>
 
                                 </Box>
 

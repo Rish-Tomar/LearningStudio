@@ -9,6 +9,15 @@ const getQuestions = async () => {
     return response.data;
 };
 
+const getQuestionsByTopic = async (topicId) => {
+
+    const response = await api.get(
+        `/questions/topic/${topicId}`
+    );
+
+    return response.data;
+};
+
 const getQuestionById = async (id) => {
 
     const response = await api.get(
@@ -28,6 +37,8 @@ const createQuestion = async (questionData) => {
     return response.data;
 };
 
+
+
 const updateQuestionStatus = async (id, status) => {
 
     const response = await api.patch(
@@ -41,6 +52,7 @@ const updateQuestionStatus = async (id, status) => {
 const questionService = {
 
     getQuestions,
+    getQuestionsByTopic,
     getQuestionById,
     createQuestion,
     updateQuestionStatus,

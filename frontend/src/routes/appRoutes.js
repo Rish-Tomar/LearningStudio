@@ -19,6 +19,7 @@ import CreateModule from "../components/modules/CreateModule.js";
 import ModuleList from "../pages/faculty/modules/ModuleList.js";
 import ModuleTopicList from "../pages/faculty/modules/ModuleTopicList.js";
 import CreateModuleTopic from "../pages/faculty/modules/CreateModuleTopic.js";
+import TopicQuestionList from "../pages/faculty/topics/TopicQuestionList.js";
 
 const AppRoutes = () => {
 
@@ -35,18 +36,14 @@ const AppRoutes = () => {
             <Route
                 path="/register"
                 element={
-                    <PublicRoute>
-                        <Register />
-                    </PublicRoute>
+                    <PublicRoute> <Register /> </PublicRoute>
                 }
             />
 
             <Route
                 path="/faculty"
                 element={
-                    <ProtectedRoute
-                        roles={["FACULTY"]}
-                    >
+                    <ProtectedRoute roles={["FACULTY"]}>
                         <FacultyDashboard />
                     </ProtectedRoute>
                 }
@@ -55,9 +52,7 @@ const AppRoutes = () => {
             <Route
                 path="/faculty/topics"
                 element={
-                    <ProtectedRoute
-                        roles={["FACULTY"]}
-                    >
+                    <ProtectedRoute roles={["FACULTY"]} >
                         <TopicList />
                     </ProtectedRoute>
                 }
@@ -66,9 +61,7 @@ const AppRoutes = () => {
             <Route
                 path="/faculty/questions"
                 element={
-                    <ProtectedRoute
-                        roles={["FACULTY"]}
-                    >
+                    <ProtectedRoute roles={["FACULTY"]} >
                         <QuestionList />
                     </ProtectedRoute>
                 }
@@ -77,10 +70,19 @@ const AppRoutes = () => {
             <Route
                 path="/faculty/topics/create"
                 element={
+                    <ProtectedRoute roles={["FACULTY"]} >
+                        <CreateTopic />
+                    </ProtectedRoute>
+                }
+            />
+
+            <Route
+                path="/faculty/topics/:topicId/questions"
+                element={
                     <ProtectedRoute
                         roles={["FACULTY"]}
                     >
-                        <CreateTopic />
+                        <TopicQuestionList />
                     </ProtectedRoute>
                 }
             />
@@ -88,9 +90,7 @@ const AppRoutes = () => {
             <Route
                 path="/faculty/questions/:id"
                 element={
-                    <ProtectedRoute
-                        roles={["FACULTY"]}
-                    >
+                    <ProtectedRoute roles={["FACULTY"]} >
                         <QuestionDetails />
                     </ProtectedRoute>
                 }
@@ -99,13 +99,13 @@ const AppRoutes = () => {
             <Route
                 path="/faculty/topics/:id/edit"
                 element={
-                    <ProtectedRoute
-                        roles={["FACULTY"]}
-                    >
+                    <ProtectedRoute roles={["FACULTY"]} >
                         <EditTopic />
                     </ProtectedRoute>
                 }
             />
+
+            
 
             <Route
                 path="/faculty/questions/create"
@@ -132,11 +132,8 @@ const AppRoutes = () => {
             <Route
                 path="/faculty/courses/:courseId/modules"
                 element={
-                    <ProtectedRoute
-                        roles={["FACULTY"]}
-                    >
+                    <ProtectedRoute roles={["FACULTY"]} >
                         <ModuleList />
-                        
                     </ProtectedRoute>
                 }
             />
@@ -144,9 +141,7 @@ const AppRoutes = () => {
             <Route
                 path="/faculty/courses/:courseId/modules/create"
                 element={
-                    <ProtectedRoute
-                        roles={["FACULTY"]}
-                    >
+                    <ProtectedRoute roles={["FACULTY"]}>
                         <CreateModule />
                     </ProtectedRoute>
                 }
@@ -155,9 +150,7 @@ const AppRoutes = () => {
             <Route
                 path="/faculty/modules/:moduleId/topics"
                 element={
-                    <ProtectedRoute
-                        roles={["FACULTY"]}
-                    >
+                    <ProtectedRoute roles={["FACULTY"]} >
                         <ModuleTopicList />
                     </ProtectedRoute>
                 }
@@ -166,9 +159,7 @@ const AppRoutes = () => {
             <Route
                 path="/faculty/modules/:moduleId/topics/create"
                 element={
-                    <ProtectedRoute
-                        roles={["FACULTY"]}
-                    >
+                    <ProtectedRoute roles={["FACULTY"]}>
                         <CreateModuleTopic />
                     </ProtectedRoute>
                 }
@@ -177,9 +168,7 @@ const AppRoutes = () => {
            <Route
                 path="/student"
                 element={
-                    <ProtectedRoute
-                        roles={["STUDENT"]}
-                    >
+                    <ProtectedRoute roles={["STUDENT"]}>
                         <StudentDashboard />
                     </ProtectedRoute>
                 }
