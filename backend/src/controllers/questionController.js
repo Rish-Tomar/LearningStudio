@@ -3,6 +3,7 @@ import asyncHandler from "../utils/asyncHandler.js";
 import {
     createQuestion as createQuestionService,
     getAllQuestions as getAllQuestionsService,
+    getQuestionsByTopic as getQuestionsByTopicService,
     getQuestionById as getQuestionByIdService,
     updateQuestionStatus as updateQuestionStatusService
 } from "../services/questionService.js";
@@ -34,6 +35,20 @@ export const getQuestionById = asyncHandler(async (req, res) => {
     res.status(200).json({
         success: true,
         data: question
+    });
+});
+
+export const getQuestionsByTopic = asyncHandler(async (req, res) => {
+
+    const { topicId } = req.params;
+
+    const questions =
+        await getQuestionsByTopicService(topicId);
+
+    res.status(200).json({
+        success: true,
+        message: "Questions fetched successfully",
+        data: questions
     });
 });
 

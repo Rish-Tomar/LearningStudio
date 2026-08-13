@@ -57,6 +57,38 @@ export const getAllQuestions = async () => {
     return questions;
 };
 
+export const getQuestionsByTopic = async (topicId) => {
+
+    if (!mongoose.Types.ObjectId.isValid(topicId)) {
+        throw new AppError(
+            "Invalid topic ID",
+            400
+        );
+    }
+
+    const existingTopic = await Topic.findById(topicId);
+
+    if (!existingTopic) {
+        throw new AppError(
+            "Topic not found",
+            404
+        );
+    }
+
+    const questions = await Question.find({
+        topic: topicId
+    })
+        .populate(
+            "topic",
+            "name code sequence"
+        )
+        .sort({
+            createdAt: -1
+        });
+
+    return questions;
+};
+
 export const getQuestionById = async (id) => {
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
