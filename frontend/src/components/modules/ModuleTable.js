@@ -1,4 +1,5 @@
 import {
+    Button,
     Chip,
     Paper,
     Table,
@@ -9,15 +10,27 @@ import {
     TableRow,
 } from "@mui/material";
 
+import { useNavigate } from "react-router-dom";
+
 const ModuleTable = ({
     modules = []
 }) => {
+
+    const navigate = useNavigate();
 
     const sortedModules = [...modules].sort(
         (first, second) =>
             (first.sequence || 0) -
             (second.sequence || 0)
     );
+
+    const handleManageTopics = (moduleId) => {
+
+        navigate(
+            `/faculty/modules/${moduleId}/topics`
+        );
+
+    };
 
     return (
         <TableContainer
@@ -48,6 +61,10 @@ const ModuleTable = ({
 
                         <TableCell>
                             <strong>Status</strong>
+                        </TableCell>
+
+                        <TableCell>
+                            <strong>Actions</strong>
                         </TableCell>
 
                     </TableRow>
@@ -90,6 +107,22 @@ const ModuleTable = ({
                                     }
                                     size="small"
                                 />
+
+                            </TableCell>
+
+                            <TableCell>
+
+                                <Button
+                                    size="small"
+                                    variant="outlined"
+                                    onClick={() =>
+                                        handleManageTopics(
+                                            module._id
+                                        )
+                                    }
+                                >
+                                    Manage Topics
+                                </Button>
 
                             </TableCell>
 

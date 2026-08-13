@@ -71,31 +71,22 @@ export const createTopic = async ({module, name, code, description, sequence}) =
             );
         }
 
-        if (sequence === undefined || sequence === null) {
-            throw new AppError(
-                "Topic sequence is required",
-                400
-            );
-        }
+        const lastTopic = await Topic.findOne({
+            module
+        })
+            .sort({ sequence: -1 })
+            .select("sequence");
 
-        const existingTopicBySequence = await Topic.findOne({
-            module,
-            sequence
-        });
-
-        if (existingTopicBySequence) {
-            throw new AppError(
-                "Topic with this sequence already exists in this module",
-                409
-            );
-        }
+        const nextSequence = lastTopic
+            ? lastTopic.sequence + 1
+            : 1;
 
         const topic = await Topic.create({
             module,
             name,
             code,
             description,
-            sequence
+            sequence: nextSequence
         });
 
         return topic;

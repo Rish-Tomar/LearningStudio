@@ -17,6 +17,8 @@ import CreateQuestion from "../pages/faculty/questions/CreateQuestion";
 import CourseList from "../pages/faculty/courses/CourseList.js";
 import CreateModule from "../components/modules/CreateModule.js";
 import ModuleList from "../pages/faculty/modules/ModuleList.js";
+import ModuleTopicList from "../pages/faculty/modules/ModuleTopicList.js";
+import CreateModuleTopic from "../pages/faculty/modules/CreateModuleTopic.js";
 
 const AppRoutes = () => {
 
@@ -146,6 +148,28 @@ const AppRoutes = () => {
                         roles={["FACULTY"]}
                     >
                         <CreateModule />
+                    </ProtectedRoute>
+                }
+            />
+
+            <Route
+                path="/faculty/modules/:moduleId/topics"
+                element={
+                    <ProtectedRoute
+                        roles={["FACULTY"]}
+                    >
+                        <ModuleTopicList />
+                    </ProtectedRoute>
+                }
+            />
+
+            <Route
+                path="/faculty/modules/:moduleId/topics/create"
+                element={
+                    <ProtectedRoute
+                        roles={["FACULTY"]}
+                    >
+                        <CreateModuleTopic />
                     </ProtectedRoute>
                 }
             />
