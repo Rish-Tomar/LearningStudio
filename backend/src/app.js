@@ -11,7 +11,8 @@ import testCaseRoutes from "./routes/testCaseRoutes.js";
 import assessmentRoutes from "./routes/assessmentRoutes.js";
 import assessmentSectionRoutes from "./routes/assessmentSectionRoutes.js";
 import assessmentQuestionRoutes from "./routes/assessmentQuestionRoutes.js";
-
+import courseRoutes from "./routes/courseRoutes.js";
+import moduleRoutes from "./routes/moduleRoutes.js";
 const app = express();
 
 
@@ -51,7 +52,8 @@ app.use("/api/test-cases", testCaseRoutes);
 app.use("/api/assessments", assessmentRoutes);
 app.use("/api/assessment-sections",assessmentSectionRoutes);
 app.use("/api/assessment-questions",assessmentQuestionRoutes);
-
+app.use("/api/courses", courseRoutes);
+app.use("/api/modules",moduleRoutes);
 //404
 app.use(notFound);
 
