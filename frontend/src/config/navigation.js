@@ -4,6 +4,7 @@ import CodeIcon from "@mui/icons-material/Code";
 import AssignmentIcon from "@mui/icons-material/Assignment";
 import PeopleIcon from "@mui/icons-material/People";
 import AssessmentIcon from "@mui/icons-material/Assessment";
+import SchoolIcon from "@mui/icons-material/School";
 
 export const facultyNavigation = [
     {
@@ -15,6 +16,11 @@ export const facultyNavigation = [
         title: "Topics",
         icon: MenuBookIcon,
         path: "/faculty/topics",
+    },
+    {
+        title: "Courses",
+        path: "/faculty/courses",
+        icon: SchoolIcon,
     },
     {
         title: "Question Bank",
@@ -36,4 +42,5 @@ export const facultyNavigation = [
         icon: AssessmentIcon,
         path: "/faculty/reports",
     },
+    
 ];

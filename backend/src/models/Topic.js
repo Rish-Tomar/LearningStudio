@@ -3,6 +3,11 @@ import { TOPIC_STATUS } from "../constants/topicStatus.js";
 
 const topicSchema = new mongoose.Schema(
     {
+        module: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Module_CGPT"
+        },
+
         name: {
             type: String,
             required: [true, "Topic name is required"],
@@ -26,6 +31,11 @@ const topicSchema = new mongoose.Schema(
             maxlength: 500
         },
 
+        sequence: {
+            type: Number,
+            min: [1, "Topic sequence must be at least 1"]
+        },
+
         status: {
             type: String,
             enum: Object.values(TOPIC_STATUS),
@@ -34,6 +44,17 @@ const topicSchema = new mongoose.Schema(
     },
     {
         timestamps: true
+    }
+);
+
+topicSchema.index(
+    { module: 1, sequence: 1 },
+    {
+        unique: true,
+        partialFilterExpression: {
+            module: { $exists: true },
+            sequence: { $exists: true }
+        }
     }
 );
 

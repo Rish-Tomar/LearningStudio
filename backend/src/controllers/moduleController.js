@@ -14,15 +14,13 @@ export const createModule = asyncHandler(async (req, res) => {
         name,
         code,
         description,
-        sequence
     } = req.body;
 
     const module = await createModuleService({
         course,
         name,
         code,
-        description,
-        sequence
+        description
     });
 
     res.status(201).json({

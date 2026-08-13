@@ -6,12 +6,14 @@ import { createTopic as createTopicService,
  
 export const createTopic = asyncHandler(async (req, res) => {
 
-    const { name, code, description } = req.body;
+    const { module, name, code, description,sequence } = req.body;
 
     const topic = await createTopicService({
+        module,
         name,
         code,
-        description
+        description,
+        sequence
     });
 
     res.status(201).json({

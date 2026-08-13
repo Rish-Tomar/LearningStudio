@@ -9,8 +9,7 @@ export const createModule = async ({
     course,
     name,
     code,
-    description,
-    sequence
+    description
 }) => {
 
     if (!mongoose.Types.ObjectId.isValid(course)) {
@@ -48,17 +47,15 @@ export const createModule = async ({
         );
     }
 
-    const existingModuleBySequence = await Module.findOne({
-        course,
-        sequence
-    });
+    const lastModule = await Module.findOne({
+        course
+    })
+        .sort({ sequence: -1 })
+        .select("sequence");
 
-    if (existingModuleBySequence) {
-        throw new AppError(
-            "Module with this sequence already exists in this course",
-            409
-        );
-    }
+    const sequence = lastModule
+        ? lastModule.sequence + 1
+        : 1;
 
     const module = await Module.create({
         course,
