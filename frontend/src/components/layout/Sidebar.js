@@ -34,7 +34,7 @@ const Sidebar = ({ open }) => {
                         disablePadding
                         sx={{ display: "block" }}
                     >
-
+                            
                         <ListItemButton
                             component={NavLink}
                             to={item.path}

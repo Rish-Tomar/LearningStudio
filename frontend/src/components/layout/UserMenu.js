@@ -47,7 +47,7 @@ const UserMenu = () => {
             <Box
                 display="flex"
                 alignItems="center"
-                gap={2}
+                gap={3}
             >
 
                 <Typography
