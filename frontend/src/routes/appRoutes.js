@@ -20,6 +20,8 @@ import ModuleList from "../pages/faculty/modules/ModuleList.js";
 import ModuleTopicList from "../pages/faculty/modules/ModuleTopicList.js";
 import CreateModuleTopic from "../pages/faculty/modules/CreateModuleTopic.js";
 import TopicQuestionList from "../pages/faculty/topics/TopicQuestionList.js";
+import TopicLearningStudio from "../pages/faculty/learningStudio/TopicLearningStudio.js";
+import CreateLearningContent from "../pages/faculty/learningStudio/CreateLearningContent.js";
 
 const AppRoutes = () => {
 
@@ -104,7 +106,27 @@ const AppRoutes = () => {
                     </ProtectedRoute>
                 }
             />
+            <Route
+                path="/faculty/topics/:topicId/learning-studio"
+                element={
+                    <ProtectedRoute
+                        roles={["FACULTY"]}
+                    >
+                        <TopicLearningStudio />
+                    </ProtectedRoute>
+                }
+            />
 
+            <Route
+                path="/faculty/topics/:topicId/learning-studio/content/create"
+                element={
+                    <ProtectedRoute
+                        roles={["FACULTY"]}
+                    >
+                        <CreateLearningContent />
+                    </ProtectedRoute>
+                }
+            />
             
 
             <Route

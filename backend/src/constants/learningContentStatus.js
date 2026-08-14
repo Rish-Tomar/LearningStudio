@@ -1,0 +1,4 @@
+export const LEARNING_CONTENT_STATUS = {
+    ACTIVE: "ACTIVE",
+    INACTIVE: "INACTIVE"
+};

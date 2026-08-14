@@ -7,20 +7,22 @@ import {
     TableHead,
     TableRow,
     Chip,
-    Typography,
     IconButton,
     Tooltip
 } from "@mui/material";
 
 import EditIcon from "@mui/icons-material/Edit";
+import MenuBookIcon from "@mui/icons-material/MenuBook";
 
 import { useNavigate } from "react-router-dom";
+
 
 const TopicTable = ({ topics }) => {
 
     const navigate = useNavigate();
 
     return (
+
         <TableContainer component={Paper}>
 
             <Table>
@@ -90,6 +92,28 @@ const TopicTable = ({ topics }) => {
 
                             <TableCell align="right">
 
+                                {/* Learning Studio */}
+
+                                <Tooltip title="Learning Studio">
+
+                                    <IconButton
+                                        color="primary"
+                                        onClick={() =>
+                                            navigate(
+                                                `/faculty/topics/${topic._id}/learning-studio`
+                                            )
+                                        }
+                                    >
+
+                                        <MenuBookIcon />
+
+                                    </IconButton>
+
+                                </Tooltip>
+
+
+                                {/* Edit Topic */}
+
                                 <Tooltip title="Edit Topic">
 
                                     <IconButton
@@ -100,7 +124,9 @@ const TopicTable = ({ topics }) => {
                                             )
                                         }
                                     >
+
                                         <EditIcon />
+
                                     </IconButton>
 
                                 </Tooltip>
@@ -116,7 +142,10 @@ const TopicTable = ({ topics }) => {
             </Table>
 
         </TableContainer>
+
     );
+
 };
+
 
 export default TopicTable;

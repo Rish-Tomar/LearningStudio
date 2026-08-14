@@ -14,6 +14,8 @@ import assessmentQuestionRoutes from "./routes/assessmentQuestionRoutes.js";
 import courseRoutes from "./routes/courseRoutes.js";
 import moduleRoutes from "./routes/moduleRoutes.js";
 import learningActivityRoutes from "./routes/learningActivityRoutes.js";
+import learningContentRoutes from "./routes/learningContentRoutes.js";
+import learningStudioRoutes from "./routes/learningStudioRoutes.js";
 const app = express();
 
 // app.use( cors({ origin: process.env.CLIENT_URL,credentials: true,}));
@@ -54,6 +56,8 @@ app.use("/api/assessment-questions",assessmentQuestionRoutes);
 app.use("/api/courses", courseRoutes);
 app.use("/api/modules",moduleRoutes);
 app.use( "/api/learning-activities", learningActivityRoutes);
+app.use("/api/learning-content",learningContentRoutes);
+app.use( "/api/learning-studio",learningStudioRoutes);
 //404
 
 
