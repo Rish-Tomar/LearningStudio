@@ -74,6 +74,7 @@ const LearningContentSection = ({
                     >
                         Add Content
                     </Button>
+                    
 
                 </Box>
 
@@ -117,6 +118,18 @@ const LearningContentSection = ({
                                             : "default"
                                     }
                                 />
+                                <Button
+                                    sx={{px:3,borderLeft:1}}
+                                    variant="outlined"
+                                    size="small"
+                                    onClick={() =>
+                                        navigate(
+                                            `/faculty/topics/${topicId}/learning-studio/content/${content._id}/edit`
+                                        )
+                                    }
+                                >
+                                    Edit
+                                </Button>
 
                             </ListItem>
 
