@@ -153,6 +153,26 @@ export const createLearningContent = async ({
 
     }
 
+        /*
+        * Validate total completion weight
+        */
+
+        const currentTotal =
+            await getActiveCompletionWeightTotal(
+                topic
+            );
+
+
+        if (
+            currentTotal + completionWeight > 100
+        ) {
+
+            throw new AppError(
+                `Completion weight exceeds the maximum allowed total of 100%. Current active total: ${currentTotal}%.`,
+                400
+            );
+
+        }
 
     /*
      * Create Learning Content
@@ -168,6 +188,8 @@ export const createLearningContent = async ({
             completionWeight
 
         });
+    
+    
 
 
     return learningContent;
@@ -395,6 +417,36 @@ export const updateLearningContent = async (
 
     }
 
+    /*
+    * Validate total completion weight
+    *
+    * Exclude the current content's existing
+    * weight because it is being replaced.
+    */
+
+    const currentTotal =
+        await getActiveCompletionWeightTotal(
+            learningContent.topic
+        );
+
+
+    const adjustedTotal =
+        currentTotal -
+        learningContent.completionWeight +
+        completionWeight;
+
+
+    if (
+        learningContent.status === "ACTIVE" &&
+        adjustedTotal > 100
+    ) {
+
+        throw new AppError(
+            `Completion weight exceeds the maximum allowed total of 100%. Current adjusted total: ${adjustedTotal}%.`,
+            400
+        );
+
+    }
 
     /*
      * Update Learning Content
@@ -424,31 +476,84 @@ export const updateLearningContentStatus = async (
     status
 ) => {
 
+    /*
+     * Validate Status
+     */
+
     if (
-        !Object.values(LEARNING_CONTENT_STATUS).includes(status)
+        !Object.values(
+            LEARNING_CONTENT_STATUS
+        ).includes(status)
     ) {
+
         throw new AppError(
             "Invalid learning content status",
             400
         );
+
     }
 
+
+    /*
+     * Find Learning Content
+     */
+
     const learningContent =
-        await LearningContent.findByIdAndUpdate(
-            id,
-            { status },
-            {
-                new: true,
-                runValidators: true
-            }
-        );
+        await LearningContent.findById(id);
+
 
     if (!learningContent) {
+
         throw new AppError(
             "Learning content not found",
             404
         );
+
     }
 
+
+    /*
+     * Validate completion weight when activating
+     */
+
+    if (
+        status === LEARNING_CONTENT_STATUS.ACTIVE &&
+        learningContent.status !==
+            LEARNING_CONTENT_STATUS.ACTIVE
+    ) {
+
+        const currentTotal =
+            await getActiveCompletionWeightTotal(
+                learningContent.topic
+            );
+
+
+        if (
+            currentTotal +
+            learningContent.completionWeight >
+            100
+        ) {
+
+            throw new AppError(
+                `Cannot activate learning content. Completion weight would exceed 100%. Current active total: ${currentTotal}%.`,
+                400
+            );
+
+        }
+
+    }
+
+
+    /*
+     * Update Learning Content Status
+     */
+
+    learningContent.status = status;
+
+
+    await learningContent.save();
+
+
     return learningContent;
+
 };

@@ -71,6 +71,7 @@ const LearningContentForm = ({
                 onChange={onChange}
                 required
                 fullWidth
+                helperText="This weight contributes to the topic's overall completion weight."
                 inputProps={{
                     min: 1,
                     max: 100,

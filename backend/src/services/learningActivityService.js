@@ -19,6 +19,7 @@ import { QUESTION_STATUS }
     from "../constants/questionStatus.js";
 import { LEARNING_ACTIVITY_STATUS }
     from "../constants/learningActivityStatus.js";
+import { getActiveCompletionWeightTotal } from "../utils/completionWeight.js";
 
 export const createLearningActivity = async ({
     topic,
@@ -253,6 +254,26 @@ export const createLearningActivity = async ({
 
     }
 
+    /*
+    * Validate total completion weight
+    */
+
+    const currentTotal =
+        await getActiveCompletionWeightTotal(
+            topic
+        );
+
+
+    if (
+        currentTotal + completionWeight > 100
+    ) {
+
+        throw new AppError(
+            `Completion weight exceeds the maximum allowed total of 100%. Current active total: ${currentTotal}%.`,
+            400
+        );
+
+    }
 
     /*
      * Create Learning Activity
@@ -555,6 +576,37 @@ export const updateLearningActivity = async (
 
     }
 
+    /*
+    * Validate total completion weight
+    *
+    * Exclude the current activity's existing
+    * weight because it is being replaced.
+    */
+
+    const currentTotal =
+        await getActiveCompletionWeightTotal(
+            learningActivity.topic
+        );
+
+
+    const adjustedTotal =
+        currentTotal -
+        learningActivity.completionWeight +
+        completionWeight;
+
+
+    if (
+        learningActivity.status === "ACTIVE" &&
+        adjustedTotal > 100
+    ) {
+
+        throw new AppError(
+            `Completion weight exceeds the maximum allowed total of 100%. Current adjusted total: ${adjustedTotal}%.`,
+            400
+        );
+
+    }
+
 
     /*
      * Update Learning Activity
@@ -582,22 +634,6 @@ export const updateLearningActivityStatus = async (
 ) => {
 
     /*
-     * Validate Learning Activity ID
-     */
-
-    if (
-        !mongoose.Types.ObjectId.isValid(id)
-    ) {
-
-        throw new AppError(
-            "Invalid learning activity ID",
-            400
-        );
-
-    }
-
-
-    /*
      * Validate Status
      */
 
@@ -616,20 +652,11 @@ export const updateLearningActivityStatus = async (
 
 
     /*
-     * Update Learning Activity Status
+     * Find Learning Activity
      */
 
     const learningActivity =
-        await LearningActivity.findByIdAndUpdate(
-            id,
-            {
-                status
-            },
-            {
-                new: true,
-                runValidators: true
-            }
-        );
+        await LearningActivity.findById(id);
 
 
     if (!learningActivity) {
@@ -640,6 +667,48 @@ export const updateLearningActivityStatus = async (
         );
 
     }
+
+
+    /*
+     * Validate completion weight when activating
+     */
+
+    if (
+        status === LEARNING_ACTIVITY_STATUS.ACTIVE &&
+        learningActivity.status !==
+            LEARNING_ACTIVITY_STATUS.ACTIVE
+    ) {
+
+        const currentTotal =
+            await getActiveCompletionWeightTotal(
+                learningActivity.topic
+            );
+
+
+        if (
+            currentTotal +
+            learningActivity.completionWeight >
+            100
+        ) {
+
+            throw new AppError(
+                `Cannot activate learning activity. Completion weight would exceed 100%. Current active total: ${currentTotal}%.`,
+                400
+            );
+
+        }
+
+    }
+
+
+    /*
+     * Update Learning Activity Status
+     */
+
+    learningActivity.status = status;
+
+
+    await learningActivity.save();
 
 
     return learningActivity;

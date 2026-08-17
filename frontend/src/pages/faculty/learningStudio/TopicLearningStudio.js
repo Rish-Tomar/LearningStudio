@@ -3,9 +3,12 @@ import { useEffect, useState } from "react";
 import {
     Alert,
     Box,
+    Card,
+    Button,
     Chip,
     CircularProgress,
     Typography,
+    CardContent,
 } from "@mui/material";
 
 import { useParams } from "react-router-dom";
@@ -42,12 +45,15 @@ const TopicLearningStudio = () => {
             setError("");
 
 
-            const response = await api.get(
-                `/learning-studio/topics/${topicId}`
+            const response =
+                await api.get(
+                    `/learning-studio/topics/${topicId}`
+                );
+
+
+            setStudio(
+                response.data.data
             );
-
-
-            setStudio(response.data.data);
 
 
         } catch (error) {
@@ -137,6 +143,66 @@ const TopicLearningStudio = () => {
     } = studio;
 
 
+    /*
+     * Calculate active Learning Content weight
+     */
+
+    const activeContentWeight =
+        content
+            .filter(
+                (item) =>
+                    item.status === "ACTIVE"
+            )
+            .reduce(
+                (total, item) =>
+                    total +
+                    Number(
+                        item.completionWeight || 0
+                    ),
+                0
+            );
+
+
+    /*
+     * Calculate active Learning Activity weight
+     */
+
+    const activeActivityWeight =
+        activities
+            .filter(
+                (activity) =>
+                    activity.status === "ACTIVE"
+            )
+            .reduce(
+                (total, activity) =>
+                    total +
+                    Number(
+                        activity.completionWeight || 0
+                    ),
+                0
+            );
+
+
+    /*
+     * Calculate total active weight
+     */
+
+    const totalActiveWeight =
+        activeContentWeight +
+        activeActivityWeight;
+
+
+    /*
+     * Calculate remaining weight
+     */
+
+    const remainingWeight =
+        Math.max(
+            0,
+            100 - totalActiveWeight
+        );
+
+
     return (
 
         <DashboardLayout>
@@ -174,17 +240,23 @@ const TopicLearningStudio = () => {
                     >
 
                         <Chip
-                            label={`Module: ${
-                                topic.module?.name || "—"
-                            }`}
+                            label={
+                                `Module: ${
+                                    topic.module?.name ||
+                                    "—"
+                                }`
+                            }
                             variant="outlined"
                         />
 
 
                         <Chip
-                            label={`Course: ${
-                                topic.module?.course?.name || "—"
-                            }`}
+                            label={
+                                `Course: ${
+                                    topic.module?.course?.name ||
+                                    "—"
+                                }`
+                            }
                             variant="outlined"
                         />
 
@@ -192,14 +264,124 @@ const TopicLearningStudio = () => {
 
                 </Box>
 
+                 {/* Completion Weight Summary */}
+
+                <Card
+                    elevation={2}
+                    sx={{ mb: 3 }}
+                >
+
+                    <CardContent>
+
+                        <Typography
+                            variant="h6"
+                            fontWeight={600}
+                            sx={{ mb: 2 }}
+                        >
+                            Completion Weight
+                        </Typography>
+
+
+                        <Box
+                            sx={{
+                                display: "grid",
+                                gridTemplateColumns: {
+                                    xs: "1fr 1fr",
+                                    sm: "repeat(4, 1fr)",
+                                },
+                                gap: 2,
+                            }}
+                        >
+
+                            <Box>
+
+                                <Typography
+                                    variant="body2"
+                                    color="text.secondary"
+                                >
+                                    Learning Content
+                                </Typography>
+
+                                <Typography
+                                    variant="h6"
+                                    fontWeight={600}
+                                >
+                                    {activeContentWeight}%
+                                </Typography>
+
+                            </Box>
+
+
+                            <Box>
+
+                                <Typography
+                                    variant="body2"
+                                    color="text.secondary"
+                                >
+                                    Learning Activities
+                                </Typography>
+
+                                <Typography
+                                    variant="h6"
+                                    fontWeight={600}
+                                >
+                                    {activeActivityWeight}%
+                                </Typography>
+
+                            </Box>
+
+
+                            <Box>
+
+                                <Typography
+                                    variant="body2"
+                                    color="text.secondary"
+                                >
+                                    Total Active
+                                </Typography>
+
+                                <Typography
+                                    variant="h6"
+                                    fontWeight={600}
+                                >
+                                    {totalActiveWeight}%
+                                </Typography>
+
+                            </Box>
+
+
+                            <Box>
+
+                                <Typography
+                                    variant="body2"
+                                    color="text.secondary"
+                                >
+                                    Remaining
+                                </Typography>
+
+                                <Typography
+                                    variant="h6"
+                                    fontWeight={600}
+                                >
+                                    {remainingWeight}%
+                                </Typography>
+
+                            </Box>
+
+                        </Box>
+
+                    </CardContent>
+
+                </Card>
 
                 {/* Learning Content */}
 
                 <LearningContentSection
                     content={content}
                     topicId={topic._id}
-                    onStatusChanged={fetchLearningStudio}
                 />
+
+               
 
 
                 {/* Learning Activities */}
@@ -207,7 +389,9 @@ const TopicLearningStudio = () => {
                 <LearningActivitySection
                     activities={activities}
                     topicId={topic._id}
-                    onStatusChanged={fetchLearningStudio}
+                    onStatusChanged={
+                        fetchLearningStudio
+                    }
                 />
 
             </Box>
