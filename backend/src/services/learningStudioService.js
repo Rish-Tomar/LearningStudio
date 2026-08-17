@@ -53,7 +53,7 @@ export const getLearningStudioTopic = async (topicId) => {
 
     const content = await LearningContent.find({
         topic: topicId,
-        status: "ACTIVE"
+        // status: "ACTIVE"
     })
     .sort({
         sequence: 1
@@ -68,7 +68,7 @@ export const getLearningStudioTopic = async (topicId) => {
 
     const activities = await LearningActivity.find({
         topic: topicId,
-        status: "ACTIVE"
+        // status: "ACTIVE"
     })
     .populate(
         "question",

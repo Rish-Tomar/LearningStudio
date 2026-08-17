@@ -14,7 +14,7 @@ const LearningContentForm = ({
     onChange,
     onSubmit,
     onCancel,
-    loading = false,
+    loading = loading,
     submitLabel = "Create Content",
 }) => {
 

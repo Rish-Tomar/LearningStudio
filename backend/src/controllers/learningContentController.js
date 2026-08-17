@@ -3,7 +3,8 @@ import asyncHandler from "../utils/asyncHandler.js";
 import {
     createLearningContent as createLearningContentService,
     getLearningContentByTopic as getLearningContentByTopicService,
-    updateLearningContent as updateLearningContentService
+    updateLearningContent as updateLearningContentService,
+    updateLearningContentStatus as updateLearningContentStatusService
 } from "../services/learningContentService.js";
 
 
@@ -93,3 +94,30 @@ export const updateLearningContent = asyncHandler(async (req, res) => {
     });
 
 });
+
+export const updateLearningContentStatus = asyncHandler(
+    async (req, res) => {
+
+        const { id } = req.params;
+
+        const { status } = req.body;
+
+        const learningContent =
+            await updateLearningContentStatusService(
+                id,
+                status
+            );
+
+        res.status(200).json({
+
+            success: true,
+
+            message:
+                "Learning content status updated successfully",
+
+            data: learningContent
+
+        });
+
+    }
+);

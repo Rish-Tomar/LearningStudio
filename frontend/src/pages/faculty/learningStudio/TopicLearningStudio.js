@@ -3,32 +3,28 @@ import { useEffect, useState } from "react";
 import {
     Alert,
     Box,
-    Card,
-    CardContent,
     Chip,
     CircularProgress,
-    Divider,
-    List,
-    ListItem,
-    ListItemText,
     Typography,
 } from "@mui/material";
-
-import MenuBookIcon from "@mui/icons-material/MenuBook";
-import QuizIcon from "@mui/icons-material/Quiz";
 
 import { useParams } from "react-router-dom";
 
 import DashboardLayout from "../../../layouts/DashboardLayout";
 
 import api from "../../../api/axios";
-import LearningContentSection from "../../../components/learningStudio/LearningContentSection";
-import LearningActivitySection from "../../../components/learningStudio/LearningActivitySection";
+
+import LearningContentSection
+    from "../../../components/learningStudio/LearningContentSection";
+
+import LearningActivitySection
+    from "../../../components/learningStudio/LearningActivitySection";
 
 
 const TopicLearningStudio = () => {
 
     const { topicId } = useParams();
+
 
     const [studio, setStudio] = useState(null);
 
@@ -37,41 +33,47 @@ const TopicLearningStudio = () => {
     const [error, setError] = useState("");
 
 
+    const fetchLearningStudio = async () => {
+
+        try {
+
+            setLoading(true);
+
+            setError("");
+
+
+            const response = await api.get(
+                `/learning-studio/topics/${topicId}`
+            );
+
+
+            setStudio(response.data.data);
+
+
+        } catch (error) {
+
+            console.error(
+                "Failed to fetch Learning Studio:",
+                error
+            );
+
+
+            setError(
+                error.response?.data?.message ||
+                "Failed to load Learning Studio"
+            );
+
+
+        } finally {
+
+            setLoading(false);
+
+        }
+
+    };
+
+
     useEffect(() => {
-
-        const fetchLearningStudio = async () => {
-
-            try {
-
-                setLoading(true);
-
-                setError("");
-
-                const response = await api.get(
-                    `/learning-studio/topics/${topicId}`
-                );
-
-                setStudio(response.data.data);
-
-            } catch (error) {
-
-                console.error(
-                    "Failed to fetch Learning Studio:",
-                    error
-                );
-
-                setError(
-                    error.response?.data?.message ||
-                    "Failed to load Learning Studio"
-                );
-
-            } finally {
-
-                setLoading(false);
-
-            }
-
-        };
 
         fetchLearningStudio();
 
@@ -152,6 +154,7 @@ const TopicLearningStudio = () => {
                         {topic.name}
                     </Typography>
 
+
                     <Typography
                         variant="body2"
                         color="text.secondary"
@@ -160,6 +163,7 @@ const TopicLearningStudio = () => {
                         {topic.description ||
                             "Manage learning content and activities"}
                     </Typography>
+
 
                     <Box
                         sx={{
@@ -170,12 +174,17 @@ const TopicLearningStudio = () => {
                     >
 
                         <Chip
-                            label={`Module: ${topic.module?.name || "—"}`}
+                            label={`Module: ${
+                                topic.module?.name || "—"
+                            }`}
                             variant="outlined"
                         />
 
+
                         <Chip
-                            label={`Course: ${topic.module?.course?.name || "—"}`}
+                            label={`Course: ${
+                                topic.module?.course?.name || "—"
+                            }`}
                             variant="outlined"
                         />
 
@@ -186,12 +195,20 @@ const TopicLearningStudio = () => {
 
                 {/* Learning Content */}
 
-               <LearningContentSection content={content} topicId={topic._id} />
+                <LearningContentSection
+                    content={content}
+                    topicId={topic._id}
+                    onStatusChanged={fetchLearningStudio}
+                />
 
 
                 {/* Learning Activities */}
 
-                <LearningActivitySection content={content}/>
+                <LearningActivitySection
+                    activities={activities}
+                    topicId={topic._id}
+                    onStatusChanged={fetchLearningStudio}
+                />
 
             </Box>
 

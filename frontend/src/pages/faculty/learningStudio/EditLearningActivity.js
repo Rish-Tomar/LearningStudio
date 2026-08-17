@@ -5,6 +5,7 @@ import {
     Box,
     Card,
     CardContent,
+    CircularProgress,
     Snackbar,
     Typography,
 } from "@mui/material";
@@ -26,22 +27,12 @@ import questionService
     from "../../../services/questionService";
 
 
-const CreateLearningActivity = () => {
+const EditLearningActivity = () => {
 
-    const { topicId } = useParams();
-
-    console.log(
-    "===== CREATE ACTIVITY DEBUG ====="
-);
-
-console.log(
-    "topicId:",
-    topicId
-);
-
-console.log(
-    "================================="
-);
+    const {
+        topicId,
+        activityId,
+    } = useParams();
 
     const navigate = useNavigate();
 
@@ -66,7 +57,7 @@ console.log(
 
     useEffect(() => {
 
-        const fetchQuestions = async () => {
+        const fetchData = async () => {
 
             try {
 
@@ -75,28 +66,94 @@ console.log(
                 setError("");
 
 
-                const response =
-                    await questionService.getQuestionsByTopic(
+                /*
+                 * Fetch questions and activities
+                 */
+
+                const [
+                    questionsResponse,
+                    activitiesResponse
+                ] = await Promise.all([
+
+                    questionService.getQuestionsByTopic(
                         topicId
+                    ),
+
+                    learningActivityService
+                        .getLearningActivitiesByTopic(
+                            topicId
+                        ),
+
+                ]);
+
+
+                const topicQuestions =
+                    questionsResponse.data || [];
+
+                const activities =
+                    activitiesResponse.data || [];
+
+
+                /*
+                 * Find requested activity
+                 */
+
+                const activity =
+                    activities.find(
+                        (item) =>
+                            item._id === activityId
                     );
 
 
+                if (!activity) {
+
+                    setError(
+                        "Learning activity not found"
+                    );
+
+                    return;
+
+                }
+
+
+                /*
+                 * Populate questions
+                 */
+
                 setQuestions(
-                    response.data || []
+                    topicQuestions
                 );
+
+
+                /*
+                 * Populate form
+                 */
+
+                setFormData({
+
+                    question:
+                        activity.question?._id || "",
+
+                    sequence:
+                        activity.sequence,
+
+                    completionWeight:
+                        activity.completionWeight,
+
+                });
 
 
             } catch (error) {
 
                 console.error(
-                    "Failed to fetch topic questions:",
+                    "Failed to load learning activity:",
                     error
                 );
 
 
                 setError(
                     error.response?.data?.message ||
-                    "Failed to load questions"
+                    "Failed to load learning activity"
                 );
 
 
@@ -109,9 +166,9 @@ console.log(
         };
 
 
-        fetchQuestions();
+        fetchData();
 
-    }, [topicId]);
+    }, [topicId, activityId]);
 
 
     const handleChange = (event) => {
@@ -147,8 +204,6 @@ console.log(
 
             const payload = {
 
-                topic: topicId,
-
                 question:
                     formData.question,
 
@@ -161,9 +216,11 @@ console.log(
             };
 
 
-            await learningActivityService.createLearningActivity(
-                payload
-            );
+            await learningActivityService
+                .updateLearningActivity(
+                    activityId,
+                    payload
+                );
 
 
             setSuccess(true);
@@ -181,14 +238,14 @@ console.log(
         } catch (error) {
 
             console.error(
-                "Failed to create learning activity:",
+                "Failed to update learning activity:",
                 error
             );
 
 
             setError(
                 error.response?.data?.message ||
-                "Failed to create learning activity"
+                "Failed to update learning activity"
             );
 
 
@@ -208,6 +265,32 @@ console.log(
     };
 
 
+    if (loading) {
+
+        return (
+
+            <DashboardLayout>
+
+                <Box
+                    sx={{
+                        display: "flex",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        minHeight: "300px",
+                    }}
+                >
+
+                    <CircularProgress />
+
+                </Box>
+
+            </DashboardLayout>
+
+        );
+
+    }
+
+
     return (
 
         <DashboardLayout>
@@ -220,7 +303,7 @@ console.log(
                         variant="h4"
                         fontWeight={600}
                     >
-                        Create Learning Activity
+                        Edit Learning Activity
                     </Typography>
 
                     <Typography
@@ -228,8 +311,7 @@ console.log(
                         color="text.secondary"
                         sx={{ mt: 0.5 }}
                     >
-                        Add a question as a learning activity
-                        for this topic
+                        Update this learning activity
                     </Typography>
 
                 </Box>
@@ -247,17 +329,11 @@ console.log(
                 )}
 
 
-                <Card elevation={2}>
+                {!error && (
 
-                    <CardContent sx={{ p: 3 }}>
+                    <Card elevation={2}>
 
-                        {loading ? (
-
-                            <Typography>
-                                Loading questions...
-                            </Typography>
-
-                        ) : (
+                        <CardContent sx={{ p: 3 }}>
 
                             <LearningActivityForm
                                 formData={formData}
@@ -266,14 +342,14 @@ console.log(
                                 onSubmit={handleSubmit}
                                 onCancel={handleCancel}
                                 loading={saving}
-                                submitLabel="Create Activity"
+                                submitLabel="Update Activity"
                             />
 
-                        )}
+                        </CardContent>
 
-                    </CardContent>
+                    </Card>
 
-                </Card>
+                )}
 
 
                 <Snackbar
@@ -288,7 +364,7 @@ console.log(
                         severity="success"
                         variant="filled"
                     >
-                        Learning activity created successfully
+                        Learning activity updated successfully
                     </Alert>
 
                 </Snackbar>
@@ -302,4 +378,4 @@ console.log(
 };
 
 
-export default CreateLearningActivity;
+export default EditLearningActivity;

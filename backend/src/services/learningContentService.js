@@ -1,17 +1,13 @@
 import mongoose from "mongoose";
 
-import LearningContent
-    from "../models/LearningContent.js";
+import LearningContent  from "../models/LearningContent.js";
 
-import Topic
-    from "../models/Topic.js";
+import Topic from "../models/Topic.js";
 
-import AppError
-    from "../utils/AppError.js";
+import AppError from "../utils/AppError.js";
 
-import { TOPIC_STATUS }
-    from "../constants/topicStatus.js";
-
+import { TOPIC_STATUS }from "../constants/topicStatus.js";
+import { LEARNING_CONTENT_STATUS } from "../constants/learningContentStatus.js";
 
 export const createLearningContent = async ({
     topic,
@@ -419,6 +415,40 @@ export const updateLearningContent = async (
 
     await learningContent.save();
 
+
+    return learningContent;
+};
+
+export const updateLearningContentStatus = async (
+    id,
+    status
+) => {
+
+    if (
+        !Object.values(LEARNING_CONTENT_STATUS).includes(status)
+    ) {
+        throw new AppError(
+            "Invalid learning content status",
+            400
+        );
+    }
+
+    const learningContent =
+        await LearningContent.findByIdAndUpdate(
+            id,
+            { status },
+            {
+                new: true,
+                runValidators: true
+            }
+        );
+
+    if (!learningContent) {
+        throw new AppError(
+            "Learning content not found",
+            404
+        );
+    }
 
     return learningContent;
 };

@@ -22,7 +22,9 @@ import CreateModuleTopic from "../pages/faculty/modules/CreateModuleTopic.js";
 import TopicQuestionList from "../pages/faculty/topics/TopicQuestionList.js";
 import TopicLearningStudio from "../pages/faculty/learningStudio/TopicLearningStudio.js";
 import CreateLearningContent from "../pages/faculty/learningStudio/CreateLearningContent.js";
-
+import EditLearningContent from "../pages/faculty/learningStudio/EditLearningContent.js";
+import EditLearningActivity from "../pages/faculty/learningStudio/EditLearningActivity.js";
+import CreateLearningActivity from "../pages/faculty/learningStudio/CreateLearningContent.js";
 const AppRoutes = () => {
 
     return (
@@ -77,6 +79,10 @@ const AppRoutes = () => {
                     </ProtectedRoute>
                 }
             />
+            <Route
+                path="/faculty/topics/:topicId/learning-studio/content/:contentId/edit"
+                element={<EditLearningContent />}
+            />
 
             <Route
                 path="/faculty/topics/:topicId/questions"
@@ -85,6 +91,27 @@ const AppRoutes = () => {
                         roles={["FACULTY"]}
                     >
                         <TopicQuestionList />
+                    </ProtectedRoute>
+                }
+            />
+
+            <Route
+                path="/faculty/topics/:topicId/learning-studio/activity/:activityId/edit"
+                element={
+                    <ProtectedRoute
+                        roles={["FACULTY"]}
+                    >
+                        <EditLearningActivity />
+                    </ProtectedRoute>
+                }
+            />
+            <Route
+                path="/faculty/topics/:topicId/learning-studio/activity/create"
+                element={
+                    <ProtectedRoute
+                        roles={["FACULTY"]}
+                    >
+                        <CreateLearningActivity />
                     </ProtectedRoute>
                 }
             />

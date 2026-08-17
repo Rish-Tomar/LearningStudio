@@ -1,5 +1,6 @@
 import {
     Box,
+    Button,
     Card,
     CardContent,
     Chip,
@@ -11,11 +12,79 @@ import {
 } from "@mui/material";
 
 import QuizIcon from "@mui/icons-material/Quiz";
+import AddIcon from "@mui/icons-material/Add";
+
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+
+import learningActivityService
+    from "../../services/learningActivityService";
 
 
 const LearningActivitySection = ({
     activities = [],
+    topicId,
+    onStatusChanged,
 }) => {
+
+    const navigate = useNavigate();
+
+    const [statusLoadingId, setStatusLoadingId] =
+        useState(null);
+
+
+    const handleStatusChange = async (
+        activityId,
+        currentStatus
+    ) => {
+
+        console.log(
+        "STATUS BUTTON CLICKED:",
+        activityId,
+        currentStatus
+    );
+
+        try {
+
+            setStatusLoadingId(activityId);
+
+
+            const newStatus =
+                currentStatus === "ACTIVE"
+                    ? "INACTIVE"
+                    : "ACTIVE";
+
+
+            await learningActivityService
+                .updateLearningActivityStatus(
+                    activityId,
+                    newStatus
+                );
+
+
+            if (onStatusChanged) {
+
+                await onStatusChanged();
+
+            }
+
+
+        } catch (error) {
+
+            console.error(
+                "Failed to update learning activity status:",
+                error
+            );
+
+
+        } finally {
+
+            setStatusLoadingId(null);
+
+        }
+
+    };
+
 
     return (
 
@@ -23,29 +92,59 @@ const LearningActivitySection = ({
 
             <CardContent>
 
+                {/* Section Header */}
+
                 <Box
                     sx={{
                         display: "flex",
                         alignItems: "center",
-                        gap: 1,
+                        justifyContent: "space-between",
                         mb: 2,
                     }}
                 >
 
-                    <QuizIcon
-                        color="primary"
-                    />
-
-                    <Typography
-                        variant="h6"
-                        fontWeight={600}
+                    <Box
+                        sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 1,
+                        }}
                     >
-                        Learning Activities
-                    </Typography>
+
+                        <QuizIcon
+                            color="primary"
+                        />
+
+                        <Typography
+                            variant="h6"
+                            fontWeight={600}
+                        >
+                            Learning Activities
+                        </Typography>
+
+                    </Box>
+
+
+                    <Button
+                        variant="contained"
+                        size="small"
+                        startIcon={<AddIcon />}
+                        onClick={() =>
+                            navigate(
+                                `/faculty/topics/${topicId}/learning-studio/activity/create`
+                            )
+                        }
+                    >
+                        Add Activity
+                    </Button>
 
                 </Box>
 
+
                 <Divider />
+
+
+                {/* No Activities */}
 
                 {activities.length === 0 ? (
 
@@ -67,38 +166,62 @@ const LearningActivitySection = ({
                                 divider
                             >
 
+                                {/* Activity Information */}
+
                                 <ListItemText
                                     primary={
-                                        `${activity.sequence}. ${activity.question?.title || "Question"}`
+                                        `${activity.sequence}. ${
+                                            activity.question?.title ||
+                                            "Question"
+                                        }`
                                     }
                                     secondary={
-                                        `${activity.question?.code || ""} • Completion Weight: ${activity.completionWeight}%`
+                                        `${
+                                            activity.question?.code ||
+                                            ""
+                                        } • Completion Weight: ${
+                                            activity.completionWeight
+                                        }%`
                                     }
                                 />
+
+
+                                {/* Activity Actions / Information */}
 
                                 <Box
                                     sx={{
                                         display: "flex",
+                                        alignItems: "center",
                                         gap: 1,
                                     }}
                                 >
 
+                                    {/* Question Type */}
+
                                     <Chip
                                         label={
-                                            activity.question?.questionType ||
+                                            activity.question
+                                                ?.questionType ||
                                             "—"
                                         }
                                         size="small"
                                     />
 
+
+                                    {/* Difficulty */}
+
                                     <Chip
                                         label={
-                                            activity.question?.difficulty ||
+                                            activity.question
+                                                ?.difficulty ||
                                             "—"
                                         }
                                         size="small"
                                         variant="outlined"
                                     />
+
+
+                                    {/* Status */}
 
                                     <Chip
                                         label={activity.status}
@@ -109,6 +232,60 @@ const LearningActivitySection = ({
                                                 : "default"
                                         }
                                     />
+
+
+                                    {/* Activate / Deactivate */}
+
+                                    <Button
+                                        variant="outlined"
+                                        size="small"
+                                        color={
+                                            activity.status === "ACTIVE"
+                                                ? "warning"
+                                                : "success"
+                                        }
+                                        disabled={
+                                            statusLoadingId ===
+                                            activity._id
+                                        }
+                                        onClick={() =>
+                                            handleStatusChange(
+                                                activity._id,
+                                                activity.status
+                                            )
+                                        }
+                                    >
+
+                                        {
+                                            statusLoadingId ===
+                                            activity._id
+
+                                                ? "Updating..."
+
+                                                : activity.status ===
+                                                  "ACTIVE"
+
+                                                    ? "Deactivate"
+
+                                                    : "Activate"
+                                        }
+
+                                    </Button>
+
+
+                                    {/* Edit */}
+
+                                    <Button
+                                        variant="outlined"
+                                        size="small"
+                                        onClick={() =>
+                                            navigate(
+                                                `/faculty/topics/${topicId}/learning-studio/activity/${activity._id}/edit`
+                                            )
+                                        }
+                                    >
+                                        Edit
+                                    </Button>
 
                                 </Box>
 

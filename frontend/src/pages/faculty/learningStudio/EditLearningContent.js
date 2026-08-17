@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 
 import {
     Alert,
@@ -16,48 +16,33 @@ import {
 
 import DashboardLayout from "../../../layouts/DashboardLayout";
 
-import LearningActivityForm
-    from "../../../components/learningStudio/LearningActivityForm";
+import LearningContentForm
+    from "../../../components/learningStudio/LearningContentForm";
 
-import learningActivityService
-    from "../../../services/learningActivityService";
-
-import questionService
-    from "../../../services/questionService";
+import learningContentService
+    from "../../../services/learningContentService";
 
 
-const CreateLearningActivity = () => {
+const EditLearningContent = () => {
 
-    const { topicId } = useParams();
-
-    console.log(
-    "===== CREATE ACTIVITY DEBUG ====="
-);
-
-console.log(
-    "topicId:",
-    topicId
-);
-
-console.log(
-    "================================="
-);
+    const {
+        topicId,
+        contentId,
+    } = useParams();
 
     const navigate = useNavigate();
 
 
-    const [questions, setQuestions] = useState([]);
+    const [learningContent, setLearningContent] = useState(null);
 
     const [formData, setFormData] = useState({
-        question: "",
-        sequence: 1,
-        completionWeight: 10,
+        title: "",
+        content: "",
+        sequence: "",
+        completionWeight: "",
     });
 
-
     const [loading, setLoading] = useState(true);
-
-    const [saving, setSaving] = useState(false);
 
     const [error, setError] = useState("");
 
@@ -66,39 +51,70 @@ console.log(
 
     useEffect(() => {
 
-        const fetchQuestions = async () => {
+        const loadContent = async () => {
 
             try {
 
-                setLoading(true);
-
                 setError("");
 
-
                 const response =
-                    await questionService.getQuestionsByTopic(
+                    await learningContentService.getLearningContentByTopic(
                         topicId
                     );
 
+                const contentList =
+                    response.data || [];
 
-                setQuestions(
-                    response.data || []
-                );
+                const contentItem =
+                    contentList.find(
+                        (item) =>
+                            String(item._id) ===
+                            String(contentId)
+                    );
+
+
+                if (!contentItem) {
+
+                    setLearningContent(null);
+
+                    setError(
+                        "Learning content not found."
+                    );
+
+                    return;
+
+                }
+
+
+                setLearningContent(contentItem);
+
+
+                setFormData({
+                    title:
+                        contentItem.title || "",
+
+                    content:
+                        contentItem.content || "",
+
+                    sequence:
+                        contentItem.sequence || "",
+
+                    completionWeight:
+                        contentItem.completionWeight || "",
+                });
 
 
             } catch (error) {
 
                 console.error(
-                    "Failed to fetch topic questions:",
+                    "Failed to load learning content:",
                     error
                 );
 
-
                 setError(
                     error.response?.data?.message ||
-                    "Failed to load questions"
+                    "Failed to load learning content"
                 );
-
 
             } finally {
 
@@ -109,9 +125,9 @@ console.log(
         };
 
 
-        fetchQuestions();
+        loadContent();
 
-    }, [topicId]);
+    }, [topicId, contentId]);
 
 
     const handleChange = (event) => {
@@ -140,29 +156,28 @@ console.log(
 
         try {
 
-            setSaving(true);
+            setLoading(true);
 
             setError("");
 
 
-            const payload = {
+            await learningContentService.updateLearningContent(
+                contentId,
+                {
+                    title:
+                        formData.title.trim(),
 
-                topic: topicId,
+                    content:
+                        formData.content.trim(),
 
-                question:
-                    formData.question,
+                    sequence:
+                        Number(formData.sequence),
 
-                sequence:
-                    Number(formData.sequence),
-
-                completionWeight:
-                    Number(formData.completionWeight),
-
-            };
-
-
-            await learningActivityService.createLearningActivity(
-                payload
+                    completionWeight:
+                        Number(
+                            formData.completionWeight
+                        ),
+                }
             );
 
 
@@ -181,18 +196,18 @@ console.log(
         } catch (error) {
 
             console.error(
-                "Failed to create learning activity:",
+                "Failed to update learning content:",
                 error
             );
 
 
             setError(
                 error.response?.data?.message ||
-                "Failed to create learning activity"
+                "Failed to update learning content"
             );
 
 
-            setSaving(false);
+            setLoading(false);
 
         }
 
@@ -220,7 +235,7 @@ console.log(
                         variant="h4"
                         fontWeight={600}
                     >
-                        Create Learning Activity
+                        Edit Learning Content
                     </Typography>
 
                     <Typography
@@ -228,8 +243,7 @@ console.log(
                         color="text.secondary"
                         sx={{ mt: 0.5 }}
                     >
-                        Add a question as a learning activity
-                        for this topic
+                        Update learning material for this topic
                     </Typography>
 
                 </Box>
@@ -247,33 +261,26 @@ console.log(
                 )}
 
 
-                <Card elevation={2}>
+                {learningContent && (
 
-                    <CardContent sx={{ p: 3 }}>
+                    <Card elevation={2}>
 
-                        {loading ? (
+                        <CardContent sx={{ p: 3 }}>
 
-                            <Typography>
-                                Loading questions...
-                            </Typography>
-
-                        ) : (
-
-                            <LearningActivityForm
+                            <LearningContentForm
                                 formData={formData}
-                                questions={questions}
                                 onChange={handleChange}
                                 onSubmit={handleSubmit}
                                 onCancel={handleCancel}
-                                loading={saving}
-                                submitLabel="Create Activity"
+                                loading={loading}
+                                submitLabel="Update Content"
                             />
 
-                        )}
+                        </CardContent>
 
-                    </CardContent>
+                    </Card>
 
-                </Card>
+                )}
 
 
                 <Snackbar
@@ -288,7 +295,7 @@ console.log(
                         severity="success"
                         variant="filled"
                     >
-                        Learning activity created successfully
+                        Learning content updated successfully
                     </Alert>
 
                 </Snackbar>
@@ -302,4 +309,4 @@ console.log(
 };
 
 
-export default CreateLearningActivity;
+export default EditLearningContent;
