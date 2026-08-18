@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 import {
     Alert,
     Box,
     Card,
     CardContent,
+    CircularProgress,
     Snackbar,
     Typography,
 } from "@mui/material";
@@ -22,6 +23,12 @@ import LearningContentForm
 import learningContentService
     from "../../../services/learningContentService";
 
+import api from "../../../api/axios";
+
+import {
+    calculateEditAvailableWeight,
+} from "../../../utils/learningStudioWeight";
+
 
 const EditLearningContent = () => {
 
@@ -33,7 +40,9 @@ const EditLearningContent = () => {
     const navigate = useNavigate();
 
 
-    const [learningContent, setLearningContent] = useState(null);
+    const [learningContent, setLearningContent] =
+        useState(null);
+
 
     const [formData, setFormData] = useState({
         title: "",
@@ -42,11 +51,18 @@ const EditLearningContent = () => {
         completionWeight: "",
     });
 
-    const [loading, setLoading] = useState(true);
 
-    const [error, setError] = useState("");
+    const [loading, setLoading] =
+        useState(true);
 
-    const [success, setSuccess] = useState(false);
+    const [error, setError] =
+        useState("");
+
+    const [success, setSuccess] =
+        useState(false);
+
+    const [remainingWeight, setRemainingWeight] =
+        useState(null);
 
 
     useEffect(() => {
@@ -55,15 +71,36 @@ const EditLearningContent = () => {
 
             try {
 
+                setLoading(true);
+
                 setError("");
 
-                const response =
-                    await learningContentService.getLearningContentByTopic(
-                        topicId
-                    );
+
+                /*
+                 * Fetch content and Learning Studio
+                 * data in parallel.
+                 */
+
+                const [
+                    contentResponse,
+                    studioResponse
+                ] = await Promise.all([
+
+                    learningContentService
+                        .getLearningContentByTopic(
+                            topicId
+                        ),
+
+                    api.get(
+                        `/learning-studio/topics/${topicId}`
+                    ),
+
+                ]);
+
 
                 const contentList =
-                    response.data || [];
+                    contentResponse.data || [];
+
 
                 const contentItem =
                     contentList.find(
@@ -86,10 +123,13 @@ const EditLearningContent = () => {
                 }
 
 
-                setLearningContent(contentItem);
+                setLearningContent(
+                    contentItem
+                );
 
 
                 setFormData({
+
                     title:
                         contentItem.title || "",
 
@@ -101,7 +141,49 @@ const EditLearningContent = () => {
 
                     completionWeight:
                         contentItem.completionWeight || "",
+
                 });
+
+
+                /*
+                 * Get Learning Studio data
+                 */
+
+                const studio =
+                    studioResponse.data.data;
+
+
+                const content =
+                    studio.content || [];
+
+
+                const activities =
+                    studio.activities || [];
+
+
+                /*
+                 * Calculate edit-aware available
+                 * completion weight.
+                 *
+                 * If this content is ACTIVE,
+                 * its existing weight is excluded
+                 * from the current active total.
+                 */
+
+                const availableWeight =
+                    calculateEditAvailableWeight({
+                        content,
+                        activities,
+                        currentWeight:
+                            contentItem.completionWeight,
+                        currentStatus:
+                            contentItem.status,
+                    });
+
+
+                setRemainingWeight(
+                    availableWeight
+                );
 
 
             } catch (error) {
@@ -111,10 +193,12 @@ const EditLearningContent = () => {
                     error
                 );
 
+
                 setError(
                     error.response?.data?.message ||
                     "Failed to load learning content"
                 );
+
 
             } finally {
 
@@ -161,24 +245,27 @@ const EditLearningContent = () => {
             setError("");
 
 
-            await learningContentService.updateLearningContent(
-                contentId,
-                {
-                    title:
-                        formData.title.trim(),
+            await learningContentService
+                .updateLearningContent(
+                    contentId,
+                    {
+                        title:
+                            formData.title.trim(),
 
-                    content:
-                        formData.content.trim(),
+                        content:
+                            formData.content.trim(),
 
-                    sequence:
-                        Number(formData.sequence),
+                        sequence:
+                            Number(
+                                formData.sequence
+                            ),
 
-                    completionWeight:
-                        Number(
-                            formData.completionWeight
-                        ),
-                }
-            );
+                        completionWeight:
+                            Number(
+                                formData.completionWeight
+                            ),
+                    }
+                );
 
 
             setSuccess(true);
@@ -223,11 +310,39 @@ const EditLearningContent = () => {
     };
 
 
+    if (loading && !learningContent) {
+
+        return (
+
+            <DashboardLayout>
+
+                <Box
+                    sx={{
+                        display: "flex",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        minHeight: "300px",
+                    }}
+                >
+
+                    <CircularProgress />
+
+                </Box>
+
+            </DashboardLayout>
+
+        );
+
+    }
+
+
     return (
 
         <DashboardLayout>
 
             <Box>
+
+                {/* Page Header */}
 
                 <Box sx={{ mb: 3 }}>
 
@@ -237,6 +352,7 @@ const EditLearningContent = () => {
                     >
                         Edit Learning Content
                     </Typography>
+
 
                     <Typography
                         variant="body2"
@@ -249,6 +365,8 @@ const EditLearningContent = () => {
                 </Box>
 
 
+                {/* Error */}
+
                 {error && (
 
                     <Alert
@@ -260,6 +378,8 @@ const EditLearningContent = () => {
 
                 )}
 
+
+                {/* Form */}
 
                 {learningContent && (
 
@@ -274,6 +394,9 @@ const EditLearningContent = () => {
                                 onCancel={handleCancel}
                                 loading={loading}
                                 submitLabel="Update Content"
+                                remainingWeight={
+                                    remainingWeight
+                                }
                             />
 
                         </CardContent>
@@ -282,6 +405,8 @@ const EditLearningContent = () => {
 
                 )}
 
+
+                {/* Success */}
 
                 <Snackbar
                     open={success}

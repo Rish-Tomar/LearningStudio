@@ -3,6 +3,7 @@ import {
     Button,
     CircularProgress,
     TextField,
+    Typography,
 } from "@mui/material";
 
 import SaveIcon from "@mui/icons-material/Save";
@@ -14,8 +15,9 @@ const LearningContentForm = ({
     onChange,
     onSubmit,
     onCancel,
-    loading = loading,
+    loading = false,
     submitLabel = "Create Content",
+    remainingWeight = null,
 }) => {
 
     return (
@@ -39,6 +41,7 @@ const LearningContentForm = ({
                 fullWidth
             />
 
+
             <TextField
                 label="Content"
                 name="content"
@@ -49,6 +52,7 @@ const LearningContentForm = ({
                 rows={8}
                 fullWidth
             />
+
 
             <TextField
                 label="Sequence"
@@ -63,6 +67,7 @@ const LearningContentForm = ({
                 }}
             />
 
+
             <TextField
                 label="Completion Weight (%)"
                 name="completionWeight"
@@ -71,12 +76,38 @@ const LearningContentForm = ({
                 onChange={onChange}
                 required
                 fullWidth
-                helperText="This weight contributes to the topic's overall completion weight."
+                error={
+                    remainingWeight !== null &&
+                    Number(formData.completionWeight || 0) >
+                        remainingWeight
+                }
+                helperText={
+                    remainingWeight !== null
+                        ? `Available weight: ${remainingWeight}%. This weight contributes to the topic's overall completion weight.`
+                        : "This weight contributes to the topic's overall completion weight."
+                }
                 inputProps={{
                     min: 1,
                     max: 100,
                 }}
             />
+
+
+            {remainingWeight !== null &&
+                Number(formData.completionWeight || 0) >
+                    remainingWeight && (
+
+                <Typography
+                    variant="body2"
+                    color="error"
+                >
+                    Completion weight cannot exceed the
+                    remaining topic weight of{" "}
+                    {remainingWeight}%.
+                </Typography>
+
+            )}
+
 
             <Box
                 sx={{
@@ -97,6 +128,7 @@ const LearningContentForm = ({
                     Cancel
                 </Button>
 
+
                 <Button
                     type="submit"
                     variant="contained"
@@ -110,7 +142,15 @@ const LearningContentForm = ({
                             <SaveIcon />
                         )
                     }
-                    disabled={loading}
+                    disabled={
+                        loading ||
+                        (
+                            remainingWeight !== null &&
+                            Number(
+                                formData.completionWeight || 0
+                            ) > remainingWeight
+                        )
+                    }
                 >
                     {loading
                         ? "Saving..."

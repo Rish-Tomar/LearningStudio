@@ -29,16 +29,13 @@ import questionService
 import api from "../../../api/axios";
 
 import {
-    calculateEditAvailableWeight,
+    calculateRemainingWeight,
 } from "../../../utils/learningStudioWeight";
 
 
-const EditLearningActivity = () => {
+const CreateLearningActivity = () => {
 
-    const {
-        topicId,
-        activityId,
-    } = useParams();
+    const { topicId } = useParams();
 
     const navigate = useNavigate();
 
@@ -53,51 +50,50 @@ const EditLearningActivity = () => {
     });
 
 
-    const [loading, setLoading] =
+    const [loading, setLoading] = useState(true);
+
+    const [saving, setSaving] = useState(false);
+
+    const [studioLoading, setStudioLoading] =
         useState(true);
 
-    const [saving, setSaving] =
-        useState(false);
+    const [error, setError] = useState("");
 
-    const [error, setError] =
-        useState("");
-
-    const [success, setSuccess] =
-        useState(false);
+    const [success, setSuccess] = useState(false);
 
     const [remainingWeight, setRemainingWeight] =
         useState(null);
 
 
+    /*
+     * Fetch Questions and Learning Studio Weight
+     */
+
     useEffect(() => {
 
-        const fetchData = async () => {
+        const fetchPageData = async () => {
 
             try {
 
                 setLoading(true);
 
+                setStudioLoading(true);
+
                 setError("");
 
 
                 /*
-                 * Fetch questions, activities and
-                 * Learning Studio data in parallel.
+                 * Fetch questions and Learning Studio
+                 * information in parallel.
                  */
 
                 const [
                     questionsResponse,
-                    activitiesResponse,
                     studioResponse
                 ] = await Promise.all([
 
                     questionService
                         .getQuestionsByTopic(
-                            topicId
-                        ),
-
-                    learningActivityService
-                        .getLearningActivitiesByTopic(
                             topicId
                         ),
 
@@ -108,62 +104,13 @@ const EditLearningActivity = () => {
                 ]);
 
 
-                const topicQuestions =
-                    questionsResponse.data || [];
-
-
-                const activities =
-                    activitiesResponse.data || [];
-
-
                 /*
-                 * Find requested activity
-                 */
-
-                const activity =
-                    activities.find(
-                        (item) =>
-                            String(item._id) ===
-                            String(activityId)
-                    );
-
-
-                if (!activity) {
-
-                    setError(
-                        "Learning activity not found"
-                    );
-
-                    return;
-
-                }
-
-
-                /*
-                 * Populate questions
+                 * Set Questions
                  */
 
                 setQuestions(
-                    topicQuestions
+                    questionsResponse.data || []
                 );
-
-
-                /*
-                 * Populate form
-                 */
-
-                setFormData({
-
-                    question:
-                        activity.question?._id || "",
-
-                    sequence:
-                        activity.sequence,
-
-                    completionWeight:
-                        activity.completionWeight,
-
-                });
 
 
                 /*
@@ -178,47 +125,37 @@ const EditLearningActivity = () => {
                     studio.content || [];
 
 
-                const studioActivities =
+                const activities =
                     studio.activities || [];
 
 
                 /*
-                 * Calculate edit-aware available
-                 * completion weight.
-                 *
-                 * If this activity is ACTIVE,
-                 * its existing weight is excluded
-                 * from the current active total.
+                 * Calculate remaining completion weight
                  */
 
-                const availableWeight =
-                    calculateEditAvailableWeight({
+                const calculatedRemainingWeight =
+                    calculateRemainingWeight(
                         content,
-                        activities:
-                            studioActivities,
-                        currentWeight:
-                            activity.completionWeight,
-                        currentStatus:
-                            activity.status,
-                    });
+                        activities
+                    );
 
 
                 setRemainingWeight(
-                    availableWeight
+                    calculatedRemainingWeight
                 );
 
 
             } catch (error) {
 
                 console.error(
-                    "Failed to load learning activity:",
+                    "Failed to load Create Learning Activity page:",
                     error
                 );
 
 
                 setError(
                     error.response?.data?.message ||
-                    "Failed to load learning activity"
+                    "Failed to load learning activity data"
                 );
 
 
@@ -226,14 +163,16 @@ const EditLearningActivity = () => {
 
                 setLoading(false);
 
+                setStudioLoading(false);
+
             }
 
         };
 
 
-        fetchData();
+        fetchPageData();
 
-    }, [topicId, activityId]);
+    }, [topicId]);
 
 
     const handleChange = (event) => {
@@ -269,6 +208,8 @@ const EditLearningActivity = () => {
 
             const payload = {
 
+                topic: topicId,
+
                 question:
                     formData.question,
 
@@ -286,8 +227,7 @@ const EditLearningActivity = () => {
 
 
             await learningActivityService
-                .updateLearningActivity(
-                    activityId,
+                .createLearningActivity(
                     payload
                 );
 
@@ -307,14 +247,14 @@ const EditLearningActivity = () => {
         } catch (error) {
 
             console.error(
-                "Failed to update learning activity:",
+                "Failed to create learning activity:",
                 error
             );
 
 
             setError(
                 error.response?.data?.message ||
-                "Failed to update learning activity"
+                "Failed to create learning activity"
             );
 
 
@@ -334,7 +274,15 @@ const EditLearningActivity = () => {
     };
 
 
-    if (loading) {
+    /*
+     * Show loading state while page data
+     * is being loaded.
+     */
+
+    if (
+        loading ||
+        studioLoading
+    ) {
 
         return (
 
@@ -374,7 +322,7 @@ const EditLearningActivity = () => {
                         variant="h4"
                         fontWeight={600}
                     >
-                        Edit Learning Activity
+                        Create Learning Activity
                     </Typography>
 
 
@@ -383,7 +331,8 @@ const EditLearningActivity = () => {
                         color="text.secondary"
                         sx={{ mt: 0.5 }}
                     >
-                        Update this learning activity
+                        Add a question as a learning activity
+                        for this topic
                     </Typography>
 
                 </Box>
@@ -405,33 +354,29 @@ const EditLearningActivity = () => {
 
                 {/* Form */}
 
-                {!error && (
+                <Card elevation={2}>
 
-                    <Card elevation={2}>
+                    <CardContent sx={{ p: 3 }}>
 
-                        <CardContent sx={{ p: 3 }}>
+                        <LearningActivityForm
+                            formData={formData}
+                            questions={questions}
+                            onChange={handleChange}
+                            onSubmit={handleSubmit}
+                            onCancel={handleCancel}
+                            loading={saving}
+                            submitLabel="Create Activity"
+                            remainingWeight={
+                                remainingWeight
+                            }
+                        />
 
-                            <LearningActivityForm
-                                formData={formData}
-                                questions={questions}
-                                onChange={handleChange}
-                                onSubmit={handleSubmit}
-                                onCancel={handleCancel}
-                                loading={saving}
-                                submitLabel="Update Activity"
-                                remainingWeight={
-                                    remainingWeight
-                                }
-                            />
+                    </CardContent>
 
-                        </CardContent>
-
-                    </Card>
-
-                )}
+                </Card>
 
 
-                {/* Success */}
+                {/* Success Message */}
 
                 <Snackbar
                     open={success}
@@ -445,7 +390,7 @@ const EditLearningActivity = () => {
                         severity="success"
                         variant="filled"
                     >
-                        Learning activity updated successfully
+                        Learning activity created successfully
                     </Alert>
 
                 </Snackbar>
@@ -459,4 +404,4 @@ const EditLearningActivity = () => {
 };
 
 
-export default EditLearningActivity;
+export default CreateLearningActivity;

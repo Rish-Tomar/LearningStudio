@@ -4,11 +4,10 @@ import {
     Alert,
     Box,
     Card,
-    Button,
+    CardContent,
     Chip,
     CircularProgress,
     Typography,
-    CardContent,
 } from "@mui/material";
 
 import { useParams } from "react-router-dom";
@@ -22,6 +21,13 @@ import LearningContentSection
 
 import LearningActivitySection
     from "../../../components/learningStudio/LearningActivitySection";
+
+import {
+    calculateActiveContentWeight,
+    calculateActiveActivityWeight,
+    calculateTotalActiveWeight,
+    calculateRemainingWeight,
+} from "../../../utils/learningStudioWeight";
 
 
 const TopicLearningStudio = () => {
@@ -144,62 +150,32 @@ const TopicLearningStudio = () => {
 
 
     /*
-     * Calculate active Learning Content weight
+     * Calculate completion weights
      */
 
     const activeContentWeight =
-        content
-            .filter(
-                (item) =>
-                    item.status === "ACTIVE"
-            )
-            .reduce(
-                (total, item) =>
-                    total +
-                    Number(
-                        item.completionWeight || 0
-                    ),
-                0
-            );
+        calculateActiveContentWeight(
+            content
+        );
 
-
-    /*
-     * Calculate active Learning Activity weight
-     */
 
     const activeActivityWeight =
-        activities
-            .filter(
-                (activity) =>
-                    activity.status === "ACTIVE"
-            )
-            .reduce(
-                (total, activity) =>
-                    total +
-                    Number(
-                        activity.completionWeight || 0
-                    ),
-                0
-            );
+        calculateActiveActivityWeight(
+            activities
+        );
 
-
-    /*
-     * Calculate total active weight
-     */
 
     const totalActiveWeight =
-        activeContentWeight +
-        activeActivityWeight;
+        calculateTotalActiveWeight(
+            content,
+            activities
+        );
 
-
-    /*
-     * Calculate remaining weight
-     */
 
     const remainingWeight =
-        Math.max(
-            0,
-            100 - totalActiveWeight
+        calculateRemainingWeight(
+            content,
+            activities
         );
 
 
@@ -264,7 +240,8 @@ const TopicLearningStudio = () => {
 
                 </Box>
 
-                 {/* Completion Weight Summary */}
+
+                {/* Completion Weight Summary */}
 
                 <Card
                     elevation={2}
@@ -374,14 +351,13 @@ const TopicLearningStudio = () => {
 
                 </Card>
 
+
                 {/* Learning Content */}
 
                 <LearningContentSection
                     content={content}
                     topicId={topic._id}
                 />
-
-               
 
 
                 {/* Learning Activities */}

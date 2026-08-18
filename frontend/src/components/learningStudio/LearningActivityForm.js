@@ -7,6 +7,7 @@ import {
     MenuItem,
     Select,
     TextField,
+    Typography,
 } from "@mui/material";
 
 import SaveIcon from "@mui/icons-material/Save";
@@ -21,7 +22,16 @@ const LearningActivityForm = ({
     onCancel,
     loading = false,
     submitLabel = "Create Activity",
+    remainingWeight = null,
 }) => {
+
+    const enteredWeight =
+        Number(formData.completionWeight || 0);
+
+    const exceedsRemainingWeight =
+        remainingWeight !== null &&
+        enteredWeight > remainingWeight;
+
 
     return (
 
@@ -101,6 +111,12 @@ const LearningActivityForm = ({
                     onChange={onChange}
                     required
                     fullWidth
+                    error={exceedsRemainingWeight}
+                    helperText={
+                        remainingWeight !== null
+                            ? `Available weight: ${remainingWeight}%. This weight contributes to the topic's overall completion weight.`
+                            : "This weight contributes to the topic's overall completion weight."
+                    }
                     inputProps={{
                         min: 1,
                         max: 100,
@@ -108,6 +124,20 @@ const LearningActivityForm = ({
                 />
 
             </Box>
+
+
+            {exceedsRemainingWeight && (
+
+                <Typography
+                    variant="body2"
+                    color="error"
+                >
+                    Completion weight cannot exceed the
+                    remaining topic weight of{" "}
+                    {remainingWeight}%.
+                </Typography>
+
+            )}
 
 
             <Box
@@ -145,7 +175,8 @@ const LearningActivityForm = ({
                     }
                     disabled={
                         loading ||
-                        questions.length === 0
+                        questions.length === 0 ||
+                        exceedsRemainingWeight
                     }
                 >
                     {loading
