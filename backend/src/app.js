@@ -16,15 +16,25 @@ import moduleRoutes from "./routes/moduleRoutes.js";
 import learningActivityRoutes from "./routes/learningActivityRoutes.js";
 import learningContentRoutes from "./routes/learningContentRoutes.js";
 import learningStudioRoutes from "./routes/learningStudioRoutes.js";
+import enrollmentRoutes from "./routes/enrollmentRoutes.js";
+
 const app = express();
 
-// app.use( cors({ origin: process.env.CLIENT_URL,credentials: true,}));
 
-//temperarily allow all cors
+// app.use(
+//     cors({
+//         origin: process.env.CLIENT_URL,
+//         credentials: true,
+//     })
+// );
+
+// Temporarily allow all CORS
 app.use(cors());
+
+
 // app.use(helmet());
 
-//temperaorily
+// Temporarily
 app.use(
     helmet({
         crossOriginResourcePolicy: false,
@@ -33,35 +43,76 @@ app.use(
 
 app.use(express.json());
 
-app.use(express.urlencoded({ extended: true }));
+app.use(
+    express.urlencoded({
+        extended: true
+    })
+);
 
 app.use(morgan("dev"));
 
-//health check
+
+// Health check
 app.get("/", (req, res) => {
+
     res.json({
         success: true,
         message: "CodingPlate API Running"
     });
+
 });
 
-//api routes
+
+// API routes
 app.use("/api/auth", authRoutes);
+
 app.use("/api/topics", topicRoutes);
+
 app.use("/api/questions", questionRoutes);
+
 app.use("/api/test-cases", testCaseRoutes);
+
 app.use("/api/assessments", assessmentRoutes);
-app.use("/api/assessment-sections",assessmentSectionRoutes);
-app.use("/api/assessment-questions",assessmentQuestionRoutes);
+
+app.use(
+    "/api/assessment-sections",
+    assessmentSectionRoutes
+);
+
+app.use(
+    "/api/assessment-questions",
+    assessmentQuestionRoutes
+);
+
 app.use("/api/courses", courseRoutes);
-app.use("/api/modules",moduleRoutes);
-app.use( "/api/learning-activities", learningActivityRoutes);
-app.use("/api/learning-content",learningContentRoutes);
-app.use( "/api/learning-studio",learningStudioRoutes);
-//404
+
+app.use("/api/modules", moduleRoutes);
+
+app.use(
+    "/api/learning-activities",
+    learningActivityRoutes
+);
+
+app.use(
+    "/api/learning-content",
+    learningContentRoutes
+);
+
+app.use(
+    "/api/learning-studio",
+    learningStudioRoutes
+);
+
+app.use(
+    "/api/enrollments",
+    enrollmentRoutes
+);
 
 
+// 404
 app.use(notFound);
+
 app.use(errorHandler);
+
 
 export default app;

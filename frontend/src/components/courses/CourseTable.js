@@ -102,6 +102,19 @@ const CourseTable = ({
                                     Manage Modules
                                 </Button>
 
+                                <Button
+                                    size="small"
+                                    variant="outlined"
+                                    sx={{ ml: 1 }}
+                                    onClick={() =>
+                                        navigate(
+                                            `/faculty/courses/${course._id}/students`
+                                        )
+                                    }
+                                >
+                                    Manage Students
+                                </Button>
+
                             </TableCell>
 
                         </TableRow>

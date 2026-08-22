@@ -7,4 +7,54 @@ const api = axios.create({
     },
 });
 
+
+/*
+ * Attach JWT token to every authenticated request.
+ */
+api.interceptors.request.use(
+    (config) => {
+
+        const storedAuth =
+            localStorage.getItem("auth");
+
+        if (storedAuth) {
+
+            try {
+
+                const auth =
+                    JSON.parse(storedAuth);
+
+                const token =
+                    auth?.token;
+
+                if (token) {
+
+                    config.headers.Authorization =
+                        `Bearer ${token}`;
+
+                }
+
+            } catch (error) {
+
+                console.error(
+                    "Failed to parse authentication data:",
+                    error
+                );
+
+            }
+
+        }
+
+        return config;
+
+    },
+
+    (error) => {
+
+        return Promise.reject(error);
+
+    }
+);
+
+
 export default api;

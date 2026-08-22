@@ -7,14 +7,72 @@ import {
     updateCourseStatus
 } from "../controllers/courseController.js";
 
+import {
+    protect,
+    authorize
+} from "../middlewares/authMiddleware.js";
+
+import { ROLES } from "../constants/roles.js";
+
 const router = express.Router();
 
-router.post("/", createCourse);
 
-router.get("/", getAllCourses);
+/*
+ * Faculty creates a course.
+ *
+ * The faculty owner is taken from the
+ * authenticated user, not from the request body.
+ */
+router.post(
+    "/",
+    protect,
+    authorize(
+        ROLES.FACULTY,
+        ROLES.ADMIN
+    ),
+    createCourse
+);
 
-router.get("/:id", getCourseById);
 
-router.patch("/:id/status", updateCourseStatus);
+/*
+ * Courses can be viewed by authenticated users.
+ *
+ * This is required because students need to
+ * search courses before requesting enrollment.
+ */
+router.get(
+    "/",
+    protect,
+    authorize(
+        ROLES.FACULTY,
+        ROLES.STUDENT,
+        ROLES.ADMIN
+    ),
+    getAllCourses
+);
+
+
+router.get(
+    "/:id",
+    protect,
+    authorize(
+        ROLES.FACULTY,
+        ROLES.STUDENT,
+        ROLES.ADMIN
+    ),
+    getCourseById
+);
+
+
+router.patch(
+    "/:id/status",
+    protect,
+    authorize(
+        ROLES.FACULTY,
+        ROLES.ADMIN
+    ),
+    updateCourseStatus
+);
+
 
 export default router;

@@ -25,6 +25,7 @@ import CreateLearningContent from "../pages/faculty/learningStudio/CreateLearnin
 import EditLearningContent from "../pages/faculty/learningStudio/EditLearningContent.js";
 import EditLearningActivity from "../pages/faculty/learningStudio/EditLearningActivity.js";
 import CreateLearningActivity from "../pages/faculty/learningStudio/CreateLearningContent.js";
+import CourseStudents from "../pages/faculty/courses/CourseStudents.js";
 const AppRoutes = () => {
 
     return (
@@ -195,7 +196,10 @@ const AppRoutes = () => {
                     </ProtectedRoute>
                 }
             />
-
+            <Route
+                path="/faculty/courses/:courseId/students"
+                element={<CourseStudents />}
+            />
             <Route
                 path="/faculty/modules/:moduleId/topics"
                 element={

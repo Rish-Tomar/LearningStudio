@@ -4,6 +4,15 @@ import { COURSE_STATUS } from "../constants/courseStatus.js";
 
 const courseSchema = new mongoose.Schema(
     {
+        /*
+         * Faculty responsible for this course.
+         */
+        faculty: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User_CGPT",
+            required: [true, "Faculty is required"]
+        },
+
         name: {
             type: String,
             required: [true, "Course name is required"],
@@ -31,7 +40,7 @@ const courseSchema = new mongoose.Schema(
             type: String,
             required: [true, "Classroom code is required"],
             unique: true,
-            sparse:true,
+            sparse: true,
             uppercase: true,
             trim: true,
             minlength: 6,
