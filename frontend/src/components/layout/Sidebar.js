@@ -9,8 +9,22 @@ import {
 import { Drawer } from "./styledComponents";
 import { NavLink } from "react-router-dom";
 import ListItemIcon from "@mui/material/ListItemIcon";
-import { facultyNavigation } from "../../config/navigation";
+
+import {
+    facultyNavigation,
+    studentNavigation
+} from "../../config/navigation";
+
+import { useAuth } from "../../contexts/AuthContext";
+
 const Sidebar = ({ open }) => {
+
+    const { auth } = useAuth();
+
+    const navigation =
+        auth?.user?.role === "STUDENT"
+            ? studentNavigation
+            : facultyNavigation;
 
     return (
 
@@ -23,71 +37,71 @@ const Sidebar = ({ open }) => {
 
             <List>
 
-            {facultyNavigation.map((item) => {
+                {navigation.map((item) => {
 
-                const Icon = item.icon;
+                    const Icon = item.icon;
 
-                return (
+                    return (
 
-                    <ListItem
-                        key={item.title}
-                        disablePadding
-                        sx={{ display: "block" }}
-                    >
-                            
-                        <ListItemButton
-                            component={NavLink}
-                            to={item.path}
-                            sx={{
-                                minHeight: 48,
-
-                                justifyContent: open
-                                    ? "initial"
-                                    : "center",
-
-                                px: 2.5,
-
-                                "&.active": {
-                                    backgroundColor: "primary.main",
-                                    color: "#fff",
-
-                                    "& .MuiListItemIcon-root": {
-                                        color: "#fff",
-                                    },
-                                },
-                            }}
+                        <ListItem
+                            key={item.title}
+                            disablePadding
+                            sx={{ display: "block" }}
                         >
 
-                            <ListItemIcon
+                            <ListItemButton
+                                component={NavLink}
+                                to={item.path}
                                 sx={{
-                                    minWidth: 0,
+                                    minHeight: 48,
 
-                                    mr: open ? 3 : "auto",
+                                    justifyContent: open
+                                        ? "initial"
+                                        : "center",
 
-                                    justifyContent: "center",
+                                    px: 2.5,
+
+                                    "&.active": {
+                                        backgroundColor: "primary.main",
+                                        color: "#fff",
+
+                                        "& .MuiListItemIcon-root": {
+                                            color: "#fff",
+                                        },
+                                    },
                                 }}
                             >
 
-                                <Icon />
+                                <ListItemIcon
+                                    sx={{
+                                        minWidth: 0,
 
-                            </ListItemIcon>
+                                        mr: open ? 3 : "auto",
 
-                            <ListItemText
-                                primary={item.title}
-                                sx={{
-                                    opacity: open ? 1 : 0,
-                                }}
-                            />
+                                        justifyContent: "center",
+                                    }}
+                                >
 
-                        </ListItemButton>
+                                    <Icon />
 
-                    </ListItem>
+                                </ListItemIcon>
 
-                );
+                                <ListItemText
+                                    primary={item.title}
+                                    sx={{
+                                        opacity: open ? 1 : 0,
+                                    }}
+                                />
 
-            })}
+                            </ListItemButton>
 
-        </List>
+                        </ListItem>
+
+                    );
+
+                })}
+
+            </List>
 
         </Drawer>
 

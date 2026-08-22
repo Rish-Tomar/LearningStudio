@@ -7,40 +7,63 @@ import AssessmentIcon from "@mui/icons-material/Assessment";
 import SchoolIcon from "@mui/icons-material/School";
 
 export const facultyNavigation = [
+
     {
         title: "Dashboard",
         icon: DashboardIcon,
         path: "/faculty",
     },
+
     {
         title: "Topics",
         icon: MenuBookIcon,
         path: "/faculty/topics",
     },
+
     {
         title: "Courses",
         path: "/faculty/courses",
         icon: SchoolIcon,
     },
+
     {
         title: "Question Bank",
         icon: CodeIcon,
         path: "/faculty/questions",
     },
+
     {
         title: "Assessments",
         icon: AssignmentIcon,
         path: "/faculty/assessments",
     },
+
     {
         title: "Students",
         icon: PeopleIcon,
         path: "/faculty/students",
     },
+
     {
         title: "Reports",
         icon: AssessmentIcon,
         path: "/faculty/reports",
     },
-    
+
+];
+
+export const studentNavigation = [
+
+    {
+        title: "Dashboard",
+        icon: DashboardIcon,
+        path: "/student",
+    },
+
+    {
+        title: "My Courses",
+        icon: SchoolIcon,
+        path: "/student/courses",
+    },
+
 ];

@@ -30,34 +30,51 @@ const closedMixin = (theme) => ({
     overflowX: "hidden",
 });
 
+// export const AppBar = styled(MuiAppBar, {
+//     shouldForwardProp: (prop) => prop !== "open",
+// })(({ theme, open }) => ({
+
+//     zIndex: theme.zIndex.drawer + 1,
+
+//     width: open
+//         ? `calc(100% - ${DRAWER_WIDTH}px)`
+//         : `calc(100% - ${COLLAPSED_DRAWER_WIDTH}px)`,
+
+//     marginLeft: open
+//         ? DRAWER_WIDTH
+//         : COLLAPSED_DRAWER_WIDTH,
+
+//     transition: theme.transitions.create(
+//         ["width", "margin"],
+//         {
+//             easing: theme.transitions.easing.sharp,
+//             duration: theme.transitions.duration.standard,
+//         }
+//     ),
+
+// }));
+
 export const AppBar = styled(MuiAppBar, {
     shouldForwardProp: (prop) => prop !== "open",
- })(({ theme, open }) => ({
+})(({ theme }) => ({
+
+    position: "fixed",
+
+    top: 0,
+    left: 0,
+
+    width: "100%",
 
     zIndex: theme.zIndex.drawer + 1,
 
     transition: theme.transitions.create(
-        ["width", "margin"],
+        ["width"],
         {
             easing: theme.transitions.easing.sharp,
-            duration: theme.transitions.duration.leavingScreen,
+            duration: theme.transitions.duration.standard,
         }
     ),
 
-    ...(open && {
-
-        marginLeft: DRAWER_WIDTH,
-
-        width: `calc(100% - ${DRAWER_WIDTH}px)`,
-
-        transition: theme.transitions.create(
-            ["width", "margin"],
-            {
-                easing: theme.transitions.easing.sharp,
-                duration: theme.transitions.duration.enteringScreen,
-            }
-        ),
-    }),
 }));
 
 export const Drawer = styled(MuiDrawer, {

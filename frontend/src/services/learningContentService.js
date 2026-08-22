@@ -6,6 +6,7 @@ const getLearningContentByTopic = async (topicId) => {
     const response = await api.get(
         `/learning-content/topic/${topicId}`
     );
+    console.log(response.data)
 
     return response.data;
 };
@@ -44,13 +45,27 @@ const updateLearningContent = async (
     return response.data;
 };
 
+const updateLearningContentStatus = async (
+    id,
+    status
+) => {
 
+    const response = await api.patch(
+        `/learning-content/${id}/status`,
+        {
+            status
+        }
+    );
+
+    return response.data;
+};
 
 const learningContentService = {
 
     getLearningContentByTopic,
     createLearningContent,
-    updateLearningContent
+    updateLearningContent,
+    updateLearningContentStatus
 
 };
 

@@ -10,39 +10,49 @@ import {
     Typography,
 } from "@mui/material";
 
-import { useNavigate, useParams } from "react-router-dom";
+import {
+    useNavigate,
+    useParams,
+} from "react-router-dom";
 
 import DashboardLayout from "../../../layouts/DashboardLayout";
 
-import LearningContentForm
-    from "../../../components/learningStudio/LearningContentForm";
+import LearningActivityForm
+    from "../../../components/learningStudio/LearningActivityForm";
 
-import learningContentService
-    from "../../../services/learningContentService";
+import learningActivityService
+    from "../../../services/learningActivityService";
+
+import questionService
+    from "../../../services/questionService";
+
+import api from "../../../api/axios";
 
 import {
     calculateRemainingWeight,
 } from "../../../utils/learningStudioWeight";
 
-import api from "../../../api/axios";
 
-
-const CreateLearningContent = () => {
+const CreateLearningActivity = () => {
 
     const { topicId } = useParams();
 
     const navigate = useNavigate();
 
 
+    const [questions, setQuestions] = useState([]);
+
+
     const [formData, setFormData] = useState({
-        title: "",
-        content: "",
+        question: "",
         sequence: 1,
         completionWeight: 10,
     });
 
 
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
+
+    const [saving, setSaving] = useState(false);
 
     const [studioLoading, setStudioLoading] =
         useState(true);
@@ -56,28 +66,59 @@ const CreateLearningContent = () => {
 
 
     /*
-     * Fetch current Learning Studio weight
+     * Fetch Questions and Learning Studio Weight
      */
 
     useEffect(() => {
 
-        const fetchLearningStudio = async () => {
+        const fetchPageData = async () => {
 
             try {
+
+                setLoading(true);
 
                 setStudioLoading(true);
 
                 setError("");
 
 
-                const response =
-                    await api.get(
-                        `/learning-studio/topics/${topicId}`
-                    );
+                /*
+                 * Fetch questions and Learning Studio
+                 * information in parallel.
+                 */
 
+                const [
+                    questionsResponse,
+                    studioResponse
+                ] = await Promise.all([
+
+                    questionService
+                        .getQuestionsByTopic(
+                            topicId
+                        ),
+
+                    api.get(
+                        `/learning-studio/topics/${topicId}`
+                    ),
+
+                ]);
+
+
+                /*
+                 * Set Questions
+                 */
+
+                setQuestions(
+                    questionsResponse.data || []
+                );
+
+
+                /*
+                 * Get Learning Studio data
+                 */
 
                 const studio =
-                    response.data.data;
+                    studioResponse.data.data;
 
 
                 const content =
@@ -107,18 +148,20 @@ const CreateLearningContent = () => {
             } catch (error) {
 
                 console.error(
-                    "Failed to fetch Learning Studio weight:",
+                    "Failed to load Create Learning Activity page:",
                     error
                 );
 
 
                 setError(
                     error.response?.data?.message ||
-                    "Failed to load Learning Studio"
+                    "Failed to load learning activity data"
                 );
 
 
             } finally {
+
+                setLoading(false);
 
                 setStudioLoading(false);
 
@@ -127,7 +170,7 @@ const CreateLearningContent = () => {
         };
 
 
-        fetchLearningStudio();
+        fetchPageData();
 
     }, [topicId]);
 
@@ -158,7 +201,7 @@ const CreateLearningContent = () => {
 
         try {
 
-            setLoading(true);
+            setSaving(true);
 
             setError("");
 
@@ -167,32 +210,26 @@ const CreateLearningContent = () => {
 
                 topic: topicId,
 
-                title:
-                    formData.title.trim(),
-
-                content:
-                    formData.content.trim(),
+                question:
+                    formData.question,
 
                 sequence:
-                    Number(formData.sequence),
+                    Number(
+                        formData.sequence
+                    ),
 
                 completionWeight:
-                    Number(formData.completionWeight),
+                    Number(
+                        formData.completionWeight
+                    ),
 
             };
 
 
-            const response =
-                await learningContentService
-                    .createLearningContent(
-                        payload
-                    );
-
-
-            console.log(
-                "Learning content created successfully:",
-                response
-            );
+            await learningActivityService
+                .createLearningActivity(
+                    payload
+                );
 
 
             setSuccess(true);
@@ -210,20 +247,18 @@ const CreateLearningContent = () => {
         } catch (error) {
 
             console.error(
-                "Failed to create learning content:",
+                "Failed to create learning activity:",
                 error
             );
 
 
             setError(
                 error.response?.data?.message ||
-                "Failed to create learning content"
+                "Failed to create learning activity"
             );
 
 
-        } finally {
-
-            setLoading(false);
+            setSaving(false);
 
         }
 
@@ -239,7 +274,15 @@ const CreateLearningContent = () => {
     };
 
 
-    if (studioLoading) {
+    /*
+     * Show loading state while page data
+     * is being loaded.
+     */
+
+    if (
+        loading ||
+        studioLoading
+    ) {
 
         return (
 
@@ -279,7 +322,7 @@ const CreateLearningContent = () => {
                         variant="h4"
                         fontWeight={600}
                     >
-                        Create Learning Content
+                        Create Learning Activity
                     </Typography>
 
 
@@ -288,7 +331,8 @@ const CreateLearningContent = () => {
                         color="text.secondary"
                         sx={{ mt: 0.5 }}
                     >
-                        Add learning material to this topic
+                        Add a question as a learning activity
+                        for this topic
                     </Typography>
 
                 </Box>
@@ -314,12 +358,14 @@ const CreateLearningContent = () => {
 
                     <CardContent sx={{ p: 3 }}>
 
-                        <LearningContentForm
+                        <LearningActivityForm
                             formData={formData}
+                            questions={questions}
                             onChange={handleChange}
                             onSubmit={handleSubmit}
                             onCancel={handleCancel}
-                            loading={loading}
+                            loading={saving}
+                            submitLabel="Create Activity"
                             remainingWeight={
                                 remainingWeight
                             }
@@ -330,7 +376,7 @@ const CreateLearningContent = () => {
                 </Card>
 
 
-                {/* Success */}
+                {/* Success Message */}
 
                 <Snackbar
                     open={success}
@@ -344,7 +390,7 @@ const CreateLearningContent = () => {
                         severity="success"
                         variant="filled"
                     >
-                        Learning content created successfully
+                        Learning activity created successfully
                     </Alert>
 
                 </Snackbar>
@@ -358,4 +404,4 @@ const CreateLearningContent = () => {
 };
 
 
-export default CreateLearningContent;
+export default CreateLearningActivity;
