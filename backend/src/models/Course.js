@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+
 import { COURSE_STATUS } from "../constants/courseStatus.js";
 
 const courseSchema = new mongoose.Schema(
@@ -26,6 +27,17 @@ const courseSchema = new mongoose.Schema(
             maxlength: 500
         },
 
+        classroomCode: {
+            type: String,
+            required: [true, "Classroom code is required"],
+            unique: true,
+            sparse:true,
+            uppercase: true,
+            trim: true,
+            minlength: 6,
+            maxlength: 12
+        },
+
         status: {
             type: String,
             enum: Object.values(COURSE_STATUS),
@@ -37,6 +49,9 @@ const courseSchema = new mongoose.Schema(
     }
 );
 
-const Course = mongoose.model("Course_CGPT", courseSchema);
+const Course = mongoose.model(
+    "Course_CGPT",
+    courseSchema
+);
 
 export default Course;
