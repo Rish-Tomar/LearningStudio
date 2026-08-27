@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-
+import XLSX from "xlsx";
 import Enrollment from "../models/Enrollment.js";
 import User from "../models/Users.js";
 import Course from "../models/Course.js";
@@ -9,7 +9,6 @@ import AppError from "../utils/AppError.js";
 import { ENROLLMENT_STATUS } from "../constants/enrollmentStatus.js";
 import { ENROLLMENT_METHOD } from "../constants/enrollmentMethod.js";
 import { ROLES } from "../constants/roles.js";
-
 
 /*
  * Check whether an ID is a valid MongoDB ObjectId.
@@ -792,4 +791,597 @@ export const getPendingEnrollments = async ({
 
 
     return enrollments;
+};
+
+export const previewBulkEnrollment = async ({
+    courseId,
+    fileBuffer
+}) => {
+
+    /*
+     * ---------------------------------------------------------
+     * Validate course
+     * ---------------------------------------------------------
+     */
+
+    const course = await findActiveCourse(
+        courseId
+    );
+
+
+    /*
+     * ---------------------------------------------------------
+     * Validate uploaded file
+     * ---------------------------------------------------------
+     */
+
+    if (!fileBuffer) {
+
+        throw new AppError(
+            "Excel file is required",
+            400
+        );
+
+    }
+
+
+    /*
+     * ---------------------------------------------------------
+     * Read Excel workbook
+     * ---------------------------------------------------------
+     */
+
+    let workbook;
+
+    try {
+
+        workbook = XLSX.read(
+            fileBuffer,
+            {
+                type: "buffer"
+            }
+        );
+
+    } catch (error) {
+
+        throw new AppError(
+            "Unable to read Excel file",
+            400
+        );
+
+    }
+
+
+    /*
+     * ---------------------------------------------------------
+     * Get first worksheet
+     * ---------------------------------------------------------
+     */
+
+    const worksheetName =
+        workbook.SheetNames[0];
+
+    if (!worksheetName) {
+
+        throw new AppError(
+            "Excel file does not contain a worksheet",
+            400
+        );
+
+    }
+
+    const worksheet =
+        workbook.Sheets[worksheetName];
+
+
+    /*
+     * ---------------------------------------------------------
+     * Convert worksheet to JSON
+     * ---------------------------------------------------------
+     */
+
+    const rows =
+        XLSX.utils.sheet_to_json(
+            worksheet,
+            {
+                defval: ""
+            }
+        );
+
+
+    if (!rows.length) {
+
+        throw new AppError(
+            "Excel file does not contain any student records",
+            400
+        );
+
+    }
+
+
+    /*
+     * ---------------------------------------------------------
+     * Helper to read Excel columns safely
+     *
+     * This makes the import tolerant to:
+     *
+     * Name
+     * name
+     * NAME
+     * Student Name
+     * student name
+     * StudentName
+     * etc.
+     * ---------------------------------------------------------
+     */
+
+    const getColumnValue = (
+        row,
+        possibleNames
+    ) => {
+
+        const rowKeys =
+            Object.keys(row);
+
+        for (
+            const key of rowKeys
+        ) {
+
+            const normalizedKey =
+                String(key)
+                    .trim()
+                    .toLowerCase()
+                    .replace(
+                        /[\s_-]+/g,
+                        ""
+                    );
+
+            for (
+                const possibleName
+                of possibleNames
+            ) {
+
+                const normalizedPossibleName =
+                    String(possibleName)
+                        .trim()
+                        .toLowerCase()
+                        .replace(
+                            /[\s_-]+/g,
+                            ""
+                        );
+
+                if (
+                    normalizedKey ===
+                    normalizedPossibleName
+                ) {
+
+                    return row[key];
+
+                }
+
+            }
+
+        }
+
+        return "";
+
+    };
+
+
+    /*
+     * ---------------------------------------------------------
+     * Prepare preview result
+     * ---------------------------------------------------------
+     */
+
+    const preview = [];
+
+    const seenEmails = new Set();
+
+
+    /*
+     * ---------------------------------------------------------
+     * Process every Excel row
+     * ---------------------------------------------------------
+     */
+
+    for (
+        let index = 0;
+        index < rows.length;
+        index++
+    ) {
+
+        const row = rows[index];
+
+        const rowNumber =
+            index + 2;
+
+
+        /*
+         * -----------------------------------------------------
+         * Read Name
+         * -----------------------------------------------------
+         */
+
+        const name =
+            String(
+                getColumnValue(
+                    row,
+                    [
+                        "Name",
+                        "Student Name",
+                        "StudentName"
+                    ]
+                ) || ""
+            ).trim();
+
+
+        /*
+         * -----------------------------------------------------
+         * Read Email
+         * -----------------------------------------------------
+         */
+
+        const email =
+            String(
+                getColumnValue(
+                    row,
+                    [
+                        "Email",
+                        "Student Email",
+                        "StudentEmail"
+                    ]
+                ) || ""
+            )
+                .trim()
+                .toLowerCase();
+
+
+        /*
+         * -----------------------------------------------------
+         * Validate name
+         * -----------------------------------------------------
+         */
+
+        if (!name) {
+
+            preview.push({
+
+                row: rowNumber,
+
+                name,
+
+                email,
+
+                status: "FAILED",
+
+                reason: "Name is required"
+
+            });
+
+            continue;
+
+        }
+
+
+        /*
+         * -----------------------------------------------------
+         * Validate email
+         * -----------------------------------------------------
+         */
+
+        if (!email) {
+
+            preview.push({
+
+                row: rowNumber,
+
+                name,
+
+                email,
+
+                status: "FAILED",
+
+                reason: "Email is required"
+
+            });
+
+            continue;
+
+        }
+
+
+        /*
+         * -----------------------------------------------------
+         * Check duplicate email inside Excel
+         * -----------------------------------------------------
+         */
+
+        if (seenEmails.has(email)) {
+
+            preview.push({
+
+                row: rowNumber,
+
+                name,
+
+                email,
+
+                status: "FAILED",
+
+                reason:
+                    "Duplicate email in Excel"
+
+            });
+
+            continue;
+
+        }
+
+        seenEmails.add(email);
+
+
+        /*
+         * -----------------------------------------------------
+         * Find student
+         * -----------------------------------------------------
+         */
+
+        const student =
+            await User.findOne({
+                email,
+                role: ROLES.STUDENT
+            });
+
+
+        if (!student) {
+
+            preview.push({
+
+                row: rowNumber,
+
+                name,
+
+                email,
+
+                status: "FAILED",
+
+                reason: "Student not found"
+
+            });
+
+            continue;
+
+        }
+
+
+        /*
+         * -----------------------------------------------------
+         * Check existing enrollment
+         * -----------------------------------------------------
+         */
+
+        const enrollment =
+            await Enrollment.findOne({
+                student: student._id,
+                course: course._id
+            });
+
+
+        /*
+         * -----------------------------------------------------
+         * No existing enrollment
+         * -----------------------------------------------------
+         */
+
+        if (!enrollment) {
+
+            preview.push({
+
+                row: rowNumber,
+
+                studentId: student._id,
+
+                name: student.name,
+
+                email: student.email,
+
+                status: "READY",
+
+                reason:
+                    "Student can be enrolled"
+
+            });
+
+            continue;
+
+        }
+
+
+        /*
+         * -----------------------------------------------------
+         * Existing ACTIVE enrollment
+         * -----------------------------------------------------
+         */
+
+        if (
+            enrollment.status ===
+            ENROLLMENT_STATUS.ACTIVE
+        ) {
+
+            preview.push({
+
+                row: rowNumber,
+
+                studentId: student._id,
+
+                name: student.name,
+
+                email: student.email,
+
+                status: "SKIPPED",
+
+                reason:
+                    "Student is already enrolled"
+
+            });
+
+            continue;
+
+        }
+
+
+        /*
+         * -----------------------------------------------------
+         * Existing PENDING enrollment
+         * -----------------------------------------------------
+         */
+
+        if (
+            enrollment.status ===
+            ENROLLMENT_STATUS.PENDING
+        ) {
+
+            preview.push({
+
+                row: rowNumber,
+
+                studentId: student._id,
+
+                name: student.name,
+
+                email: student.email,
+
+                status: "SKIPPED",
+
+                reason:
+                    "Enrollment request is already pending"
+
+            });
+
+            continue;
+
+        }
+
+
+        /*
+         * -----------------------------------------------------
+         * Existing REJECTED enrollment
+         * -----------------------------------------------------
+         */
+
+        if (
+            enrollment.status ===
+            ENROLLMENT_STATUS.REJECTED
+        ) {
+
+            preview.push({
+
+                row: rowNumber,
+
+                studentId: student._id,
+
+                name: student.name,
+
+                email: student.email,
+
+                status: "SKIPPED",
+
+                reason:
+                    "Previous enrollment request was rejected"
+
+            });
+
+            continue;
+
+        }
+
+
+        /*
+         * -----------------------------------------------------
+         * Existing REMOVED enrollment
+         * -----------------------------------------------------
+         */
+
+        if (
+            enrollment.status ===
+            ENROLLMENT_STATUS.REMOVED
+        ) {
+
+            preview.push({
+
+                row: rowNumber,
+
+                studentId: student._id,
+
+                name: student.name,
+
+                email: student.email,
+
+                status: "READY",
+
+                reason:
+                    "Previously removed student can be reactivated"
+
+            });
+
+            continue;
+
+        }
+
+    }
+
+
+    /*
+     * ---------------------------------------------------------
+     * Generate summary
+     * ---------------------------------------------------------
+     */
+
+    const summary = {
+
+        total: preview.length,
+
+        ready: preview.filter(
+            item =>
+                item.status === "READY"
+        ).length,
+
+        skipped: preview.filter(
+            item =>
+                item.status === "SKIPPED"
+        ).length,
+
+        failed: preview.filter(
+            item =>
+                item.status === "FAILED"
+        ).length
+
+    };
+
+
+    /*
+     * ---------------------------------------------------------
+     * Return preview
+     * ---------------------------------------------------------
+     */
+
+    return {
+
+        course: {
+
+            _id: course._id,
+
+            name: course.name,
+
+            code: course.code
+
+        },
+
+        summary,
+
+        students: preview
+
+    };
+
 };

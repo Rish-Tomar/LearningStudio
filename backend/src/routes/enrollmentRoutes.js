@@ -10,13 +10,16 @@ import {
     getMyEnrollments,
     getMyEnrollmentRequests,
     getCourseEnrollments,
-    getPendingEnrollments
+    getPendingEnrollments,
+    previewBulkEnrollment
 } from "../controllers/enrollmentController.js";
 
 import {
     protect,
     authorize
 } from "../middlewares/authMiddleware.js";
+
+import uploadExcel from "../middlewares/uploadExcel.js";
 
 import { ROLES } from "../constants/roles.js";
 
@@ -198,5 +201,20 @@ router.patch(
     removeEnrollment
 );
 
+/*
+ * Preview bulk student enrollment from Excel.
+ *
+ * POST /api/enrollments/bulk/preview
+ */
+router.post(
+    "/bulk/preview",
+    protect,
+    authorize(
+        ROLES.FACULTY,
+        ROLES.ADMIN
+    ),
+    uploadExcel.single("file"),
+    previewBulkEnrollment
+);
 
 export default router;

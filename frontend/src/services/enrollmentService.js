@@ -158,29 +158,39 @@ const removeEnrollment = async (
     return response.data;
 };
 
+/*
+ * Preview students from an Excel file
+ * before bulk enrollment.
+ */
+const previewBulkEnrollment = async ( courseId, file) => {
+    const formData = new FormData();
+    formData.append(  "courseId", courseId );
+    formData.append(  "file",  file );
+     const response = await axios.post(
+        "/enrollments/bulk/preview",
+        formData,
+        {
+            headers: {
+                "Content-Type": "multipart/form-data"
+            }
+        }
+    );
+
+    return response.data;
+};
 
 const enrollmentService = {
-
     requestEnrollmentByCourse,
-
     requestEnrollmentByClassroomCode,
-
     getMyEnrollments,
-
     getMyEnrollmentRequests,
-
     addStudentByFaculty,
-
     getCourseEnrollments,
-
     getPendingEnrollments,
-
     approveEnrollment,
-
     rejectEnrollment,
-
-    removeEnrollment
-
+    removeEnrollment,
+    previewBulkEnrollment
 };
 
 

@@ -26,6 +26,9 @@ import EditLearningContent from "../pages/faculty/learningStudio/EditLearningCon
 import EditLearningActivity from "../pages/faculty/learningStudio/EditLearningActivity.js";
 import CreateLearningActivity from "../pages/faculty/learningStudio/CreateLearningContent.js";
 import CourseStudents from "../pages/faculty/courses/CourseStudents.js";
+import StudentCourseDetail from "../pages/student/StudentCourseDetail.js";
+import StudentCourseOverview from "../pages/student/StudentCourseOverview.js";
+import StudentCourses from "../pages/student/StudentCourses.js";
 const AppRoutes = () => {
 
     return (
@@ -226,6 +229,25 @@ const AppRoutes = () => {
                     </ProtectedRoute>
                 }
             />
+
+            <Route
+                path="/student/courses/:courseId"
+                element={
+                    <ProtectedRoute roles={["STUDENT"]}>
+                        <StudentCourseOverview />
+                    </ProtectedRoute>
+                }
+            />
+
+            <Route
+                path="/student/courses"
+                element={
+                    <ProtectedRoute roles={["STUDENT"]}>
+                        <StudentCourses />
+                    </ProtectedRoute>
+                }
+            />
+
 
             {/* <Route
                 path="/admin"

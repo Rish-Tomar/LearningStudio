@@ -38,12 +38,20 @@ const updateCourseStatus = async (id, status) => {
     return response.data;
 };
 
+// Add these functions inside courseService.js
+
+const submitAssignment = async (assignmentId,data)=>{
+    return await api.post(`/assignments/${assignmentId}/submit`,data);
+}
+
+
 const courseService = {
 
     getCourses,
     getCourseById,
     createCourse,
-    updateCourseStatus
+    updateCourseStatus,
+    submitAssignment
 
 };
 

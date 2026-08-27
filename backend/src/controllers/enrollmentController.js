@@ -10,8 +10,11 @@ import {
     getMyEnrollments as getMyEnrollmentsService,
     getMyEnrollmentRequests as getMyEnrollmentRequestsService,
     getCourseEnrollments as getCourseEnrollmentsService,
-    getPendingEnrollments as getPendingEnrollmentsService
+    getPendingEnrollments as getPendingEnrollmentsService,
+    previewBulkEnrollment as previewBulkEnrollmentService
 } from "../services/enrollmentService.js";
+
+import AppError from "../utils/AppError.js";
 
 /*
  * Student requests enrollment by searching/selecting a course.
@@ -249,6 +252,48 @@ export const getPendingEnrollments =
             message:
                 "Pending enrollment requests fetched successfully",
             data: enrollments
+        });
+
+    });
+
+    /*
+ * Preview students from an Excel file
+ * before bulk enrollment.
+ */
+export const previewBulkEnrollment =
+    asyncHandler(async (req, res) => {
+
+        const { courseId } = req.body;
+
+        if (!courseId) {
+
+            throw new AppError(
+                "Course ID is required",
+                400
+            );
+
+        }
+
+        if (!req.file) {
+
+            throw new AppError(
+                "Excel file is required",
+                400
+            );
+
+        }
+
+        const preview =
+            await previewBulkEnrollmentService({
+                courseId,
+                fileBuffer: req.file.buffer
+            });
+
+        res.status(200).json({
+            success: true,
+            message:
+                "Excel file validated successfully",
+            data: preview
         });
 
     });
