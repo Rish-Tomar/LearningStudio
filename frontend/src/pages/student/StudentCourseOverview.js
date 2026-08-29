@@ -17,7 +17,7 @@ import {
 import { useParams } from "react-router-dom";
 
 import DashboardLayout from "../../layouts/DashboardLayout";
-
+import { useNavigate } from "react-router-dom";
 import courseService from "../../services/courseService";
 import moduleService from "../../services/moduleService";
 import topicService from "../../services/topicService";
@@ -26,7 +26,7 @@ import topicService from "../../services/topicService";
 const StudentCourseOverview = () => {
 
     const { courseId } = useParams();
-
+    const navigate = useNavigate();
     const [course, setCourse] = useState(null);
     const [modules, setModules] = useState([]);
     const [topicsByModule, setTopicsByModule] = useState({});
@@ -342,7 +342,10 @@ const StudentCourseOverview = () => {
 
                                                         <ListItem key={topic._id} disablePadding>
 
-                                                            <ListItemButton>
+                                                            <ListItemButton
+                                                                onClick={() =>
+                                                                navigate(`/student/topics/${topic._id}`)
+                                                            }>
 
                                                                 <ListItemText
                                                                     primary={topic.name}

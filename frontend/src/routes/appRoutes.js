@@ -29,6 +29,7 @@ import CourseStudents from "../pages/faculty/courses/CourseStudents.js";
 import StudentCourseDetail from "../pages/student/StudentCourseDetail.js";
 import StudentCourseOverview from "../pages/student/StudentCourseOverview.js";
 import StudentCourses from "../pages/student/StudentCourses.js";
+import StudentTopicLearning from "../pages/student/StudentTopicLearning.js";
 const AppRoutes = () => {
 
     return (
@@ -244,6 +245,15 @@ const AppRoutes = () => {
                 element={
                     <ProtectedRoute roles={["STUDENT"]}>
                         <StudentCourses />
+                    </ProtectedRoute>
+                }
+            />
+
+            <Route
+                path="/student/topics/:topicId"
+                element={
+                    <ProtectedRoute roles={["STUDENT"]}>
+                        <StudentTopicLearning />
                     </ProtectedRoute>
                 }
             />
