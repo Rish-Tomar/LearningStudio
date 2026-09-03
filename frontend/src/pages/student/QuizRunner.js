@@ -6,6 +6,7 @@ import {
     Card,
     CardContent,
     CircularProgress,
+    Divider,
     LinearProgress,
     Paper,
     Stack,
@@ -38,6 +39,9 @@ const QuizRunner = () => {
     const [answers, setAnswers] =
         useState({});
 
+    const [visitedQuestions, setVisitedQuestions] =
+        useState(() => new Set([0]));
+
     const [loading, setLoading] =
         useState(true);
 
@@ -66,10 +70,13 @@ const QuizRunner = () => {
                 setSession(sessionData);
 
                 if (sessionData.status !== "LIVE") {
+
                     setError(
                         "This quiz is not currently live."
                     );
+
                     return;
+
                 }
 
                 const assessmentId =
@@ -77,9 +84,11 @@ const QuizRunner = () => {
                     sessionData.assessment;
 
                 if (!assessmentId) {
+
                     throw new Error(
                         "Assessment information is missing."
                     );
+
                 }
 
                 const assessmentResponse =
@@ -122,29 +131,29 @@ const QuizRunner = () => {
 
     const questions = useMemo(() => {
 
-    if (!assessment?.sections) {
-        return [];
-    }
+        if (!assessment?.sections) {
+            return [];
+        }
 
-    return assessment.sections
-        .flatMap(
-            (section) =>
-                section.questions || []
-        )
-        .map(
-            (item) => ({
-                ...item.question,
-                marks: item.marks,
-                order: item.order
-            })
-        )
-        .sort(
-            (a, b) =>
-                Number(a.order || 0) -
-                Number(b.order || 0)
-        );
+        return assessment.sections
+            .flatMap(
+                (section) =>
+                    section.questions || []
+            )
+            .map(
+                (item) => ({
+                    ...item.question,
+                    marks: item.marks,
+                    order: item.order
+                })
+            )
+            .sort(
+                (a, b) =>
+                    Number(a.order || 0) -
+                    Number(b.order || 0)
+            );
 
-}, [assessment]);
+    }, [assessment]);
 
 
     const question =
@@ -177,9 +186,26 @@ const QuizRunner = () => {
             questions.length - 1
         ) {
 
+            const nextQuestion =
+                currentQuestion + 1;
+
             setCurrentQuestion(
-                (previous) =>
-                    previous + 1
+                nextQuestion
+            );
+
+            setVisitedQuestions(
+                (previous) => {
+
+                    const updated =
+                        new Set(previous);
+
+                    updated.add(
+                        nextQuestion
+                    );
+
+                    return updated;
+
+                }
             );
 
         }
@@ -191,12 +217,55 @@ const QuizRunner = () => {
 
         if (currentQuestion > 0) {
 
+            const previousQuestion =
+                currentQuestion - 1;
+
             setCurrentQuestion(
-                (previous) =>
-                    previous - 1
+                previousQuestion
+            );
+
+            setVisitedQuestions(
+                (previous) => {
+
+                    const updated =
+                        new Set(previous);
+
+                    updated.add(
+                        previousQuestion
+                    );
+
+                    return updated;
+
+                }
             );
 
         }
+
+    };
+
+
+    const handleQuestionNavigation = (
+        questionIndex
+    ) => {
+
+        setCurrentQuestion(
+            questionIndex
+        );
+
+        setVisitedQuestions(
+            (previous) => {
+
+                const updated =
+                    new Set(previous);
+
+                updated.add(
+                    questionIndex
+                );
+
+                return updated;
+
+            }
+        );
 
     };
 
@@ -293,13 +362,21 @@ const QuizRunner = () => {
         100;
 
 
+    const answeredCount =
+        Object.keys(answers).length;
+
+
     return (
         <DashboardLayout>
 
             <Box
                 sx={{
-                    maxWidth: 1000,
-                    mx: "auto"
+                    maxWidth: 1280,
+                    mx: "auto",
+                    pr: {
+                        xs: 0,
+                        lg: 37
+                    }
                 }}
             >
 
@@ -361,16 +438,371 @@ const QuizRunner = () => {
                     }}
                 />
 
+                {/* Fixed Question Palette */}
 
-                {/* Question */}
+                <Box
+                    sx={{
+                        position: "fixed",
+                        top: 104,
+                        right: 24,
+                        width: 250,
+                        maxHeight: "calc(100vh - 128px)",
+                        overflowY: "auto",
+                        zIndex: 10,
+                        display: {
+                            xs: "none",
+                            lg: "block"
+                        }
+                    }}
+                >
+                    <Card
+                        elevation={2}
+                        sx={{
+                            borderRadius: 2,
+                            border: "1px solid",
+                            borderColor: "divider"
+                        }}
+                    >
+                        <CardContent
+                            sx={{
+                                p: 2.5,
+                                "&:last-child": {
+                                    pb: 2.5
+                                }
+                            }}
+                        >
+
+                            {/* Palette Header */}
+
+                            <Stack
+                                direction="row"
+                                justifyContent="space-between"
+                                alignItems="center"
+                            >
+
+                                <Box>
+
+                                    <Typography
+                                        variant="subtitle1"
+                                        fontWeight={700}
+                                    >
+                                        Questions
+                                    </Typography>
+
+                                    <Typography
+                                        variant="caption"
+                                        color="text.secondary"
+                                    >
+                                        Navigate through the quiz
+                                    </Typography>
+
+                                </Box>
+
+                                <Box
+                                    sx={{
+                                        minWidth: 42,
+                                        height: 30,
+                                        px: 1,
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        borderRadius: 1,
+                                        bgcolor: "action.hover"
+                                    }}
+                                >
+                                    <Typography
+                                        variant="caption"
+                                        fontWeight={700}
+                                    >
+                                        {currentQuestion + 1}/
+                                        {questions.length}
+                                    </Typography>
+                                </Box>
+
+                            </Stack>
+
+
+                            <Divider sx={{ my: 2 }} />
+
+
+                            {/* Question Numbers */}
+
+                            <Box
+                                sx={{
+                                    display: "grid",
+                                    gridTemplateColumns:
+                                        "repeat(5, 1fr)",
+                                    gap: 1
+                                }}
+                            >
+
+                                {questions.map(
+                                    (
+                                        paletteQuestion,
+                                        index
+                                    ) => {
+
+                                        const isCurrent =
+                                            currentQuestion === index;
+
+                                        const isAnswered =
+                                            answers[
+                                                paletteQuestion._id
+                                            ] !== undefined;
+
+                                        const isVisited =
+                                            visitedQuestions.has(index);
+
+                                        let backgroundColor =
+                                            "background.paper";
+
+                                        let textColor =
+                                            "text.primary";
+
+                                        let borderColor =
+                                            "divider";
+
+                                        if (isCurrent) {
+
+                                            backgroundColor =
+                                                "primary.main";
+
+                                            textColor =
+                                                "primary.contrastText";
+
+                                            borderColor =
+                                                "primary.main";
+
+                                        } else if (isAnswered) {
+
+                                            backgroundColor =
+                                                "success.main";
+
+                                            textColor =
+                                                "success.contrastText";
+
+                                            borderColor =
+                                                "success.main";
+
+                                        } else if (isVisited) {
+
+                                            backgroundColor =
+                                                "warning.main";
+
+                                            textColor =
+                                                "warning.contrastText";
+
+                                            borderColor =
+                                                "warning.main";
+
+                                        }
+
+                                        return (
+                                            <Button
+                                                key={
+                                                    paletteQuestion._id
+                                                }
+                                                onClick={() =>
+                                                    handleQuestionNavigation(
+                                                        index
+                                                    )
+                                                }
+                                                disableRipple
+                                                sx={{
+                                                    minWidth: 0,
+                                                    width: 38,
+                                                    height: 38,
+                                                    p: 0,
+                                                    mx: "auto",
+                                                    borderRadius: 1,
+                                                    border: "1px solid",
+                                                    borderColor:
+                                                        borderColor,
+                                                    bgcolor:
+                                                        backgroundColor,
+                                                    color:
+                                                        textColor,
+                                                    fontSize:
+                                                        "0.8rem",
+                                                    fontWeight: 700,
+                                                    lineHeight: 1,
+                                                    boxShadow: "none",
+                                                    "&:hover": {
+                                                        bgcolor:
+                                                            backgroundColor,
+                                                        opacity: 0.85,
+                                                        boxShadow:
+                                                            "none"
+                                                    }
+                                                }}
+                                            >
+                                                {String(index + 1).padStart(
+                                                    2,
+                                                    "0"
+                                                )}
+                                            </Button>
+                                        );
+
+                                    }
+                                )}
+
+                            </Box>
+
+
+                            <Divider sx={{ my: 2.5 }} />
+
+
+                            {/* Status Legend */}
+
+                            <Typography
+                                variant="caption"
+                                fontWeight={700}
+                                color="text.secondary"
+                                sx={{
+                                    display: "block",
+                                    mb: 1.5,
+                                    letterSpacing: 0.5
+                                }}
+                            >
+                                STATUS
+                            </Typography>
+
+
+                            <Stack spacing={1.25}>
+
+                                {/* Current */}
+
+                                <Stack
+                                    direction="row"
+                                    spacing={1.25}
+                                    alignItems="center"
+                                >
+
+                                    <Box
+                                        sx={{
+                                            width: 10,
+                                            height: 10,
+                                            borderRadius: "50%",
+                                            bgcolor:
+                                                "primary.main"
+                                        }}
+                                    />
+
+                                    <Typography
+                                        variant="caption"
+                                    >
+                                        Current
+                                    </Typography>
+
+                                </Stack>
+
+
+                                {/* Answered */}
+
+                                <Stack
+                                    direction="row"
+                                    spacing={1.25}
+                                    alignItems="center"
+                                >
+
+                                    <Box
+                                        sx={{
+                                            width: 10,
+                                            height: 10,
+                                            borderRadius: "50%",
+                                            bgcolor:
+                                                "success.main"
+                                        }}
+                                    />
+
+                                    <Typography
+                                        variant="caption"
+                                    >
+                                        Answered
+                                    </Typography>
+
+                                </Stack>
+
+
+                                {/* Visited */}
+
+                                <Stack
+                                    direction="row"
+                                    spacing={1.25}
+                                    alignItems="center"
+                                >
+
+                                    <Box
+                                        sx={{
+                                            width: 10,
+                                            height: 10,
+                                            borderRadius: "50%",
+                                            bgcolor:
+                                                "warning.main"
+                                        }}
+                                    />
+
+                                    <Typography
+                                        variant="caption"
+                                    >
+                                        Visited
+                                    </Typography>
+
+                                </Stack>
+
+
+                                {/* Not Visited */}
+
+                                <Stack
+                                    direction="row"
+                                    spacing={1.25}
+                                    alignItems="center"
+                                >
+
+                                    <Box
+                                        sx={{
+                                            width: 10,
+                                            height: 10,
+                                            borderRadius: "50%",
+                                            bgcolor:
+                                                "background.paper",
+                                            border: "1px solid",
+                                            borderColor:
+                                                "divider"
+                                        }}
+                                    />
+
+                                    <Typography
+                                        variant="caption"
+                                        color="text.secondary"
+                                    >
+                                        Not Visited
+                                    </Typography>
+
+                                </Stack>
+
+                            </Stack>
+
+                        </CardContent>
+                    </Card>
+                </Box>
+                   
+
+
+                {/* Question Card */}
 
                 <Card>
 
                     <CardContent
-                        sx={{ p: { xs: 2, sm: 4 } }}
+                        sx={{
+                            p: {
+                                xs: 0,
+                                sm: 2
+                            }
+                        }}
                     >
 
-                        <Stack spacing={3}>
+                        <Stack spacing={2}>
 
                             <Stack
                                 direction="row"
@@ -390,9 +822,11 @@ const QuizRunner = () => {
                                     variant="body2"
                                     color="text.secondary"
                                 >
-                                    {question.marks || 0}{" "}
+                                    {question.marks ||
+                                        0}{" "}
                                     {Number(
-                                        question.marks || 0
+                                        question.marks ||
+                                            0
                                     ) === 1
                                         ? "mark"
                                         : "marks"}
@@ -419,8 +853,10 @@ const QuizRunner = () => {
 
                             <Stack spacing={2}>
 
-                                {(question.options ||
-                                    []).map(
+                                {(
+                                    question.options ||
+                                    []
+                                ).map(
                                     (
                                         option,
                                         optionIndex
