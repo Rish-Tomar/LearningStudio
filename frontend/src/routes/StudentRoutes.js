@@ -8,6 +8,7 @@ import StudentCourseOverview from "../pages/student/StudentCourseOverview";
 import StudentTopicLearning from "../pages/student/StudentTopicLearning";
 import StudentJoinQuiz from "../pages/student/StudentJoinQuiz";
 import QuizRunner from "../pages/student/QuizRunner";
+import QuizResult from "../pages/student/QuizResult";
 
 const StudentRoutes = () => {
 
@@ -64,6 +65,14 @@ const StudentRoutes = () => {
                 element={
                     <ProtectedRoute roles={["STUDENT"]}>
                         <QuizRunner />
+                    </ProtectedRoute>
+                }
+            />
+            <Route
+                path="/quiz/:sessionId/result"
+                element={
+                    <ProtectedRoute roles={["STUDENT"]}>
+                        <QuizResult />
                     </ProtectedRoute>
                 }
             />

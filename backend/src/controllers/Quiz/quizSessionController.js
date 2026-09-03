@@ -5,9 +5,11 @@ import {
     getQuizSessionById as getQuizSessionByIdService,
     joinQuizSession as joinQuizSessionService,
     startQuizSession as startQuizSessionService,
-    endQuizSession as endQuizSessionService
+    endQuizSession as endQuizSessionService,
 } from "../../services/quiz/quizSessionService.js";
 
+import submitQuizResponseService from "../../services/quiz/quizResponseService.js";
+import submitQuizAttemptService from "../../services/quiz/submitQuizAttemptService.js";
 export const createQuizSession = asyncHandler(
     async (req, res) => {
 
@@ -29,21 +31,18 @@ export const createQuizSession = asyncHandler(
     }
 );
 
-export const getQuizSessionById = asyncHandler(
-    async (req, res) => {
+export const getQuizSessionById = asyncHandler(async (req, res) => {
+    const session = await getQuizSessionByIdService({
+        sessionId: req.params.id,
+        userId: req.user._id,
+        userRole: req.user.role
+    });
 
-        const session =
-            await getQuizSessionByIdService(
-                req.params.id
-            );
-
-        res.status(200).json({
-            success: true,
-            data: session
-        });
-
-    }
-);
+    res.status(200).json({
+        success: true,
+        data: session
+    });
+});
 
 export const joinQuizSession = asyncHandler(
     async (req, res) => {
@@ -98,3 +97,33 @@ export const endQuizSession = asyncHandler(
 
     }
 );
+
+export const submitQuizResponse = asyncHandler(async (req, res) => {
+    const response = await submitQuizResponseService({
+        sessionId: req.params.id,
+        attemptId: req.body.attemptId,
+        assessmentQuestionId: req.body.assessmentQuestionId,
+        studentId: req.user._id,
+        selectedAnswer: req.body.selectedAnswer,
+        responseTimeMs: req.body.responseTimeMs
+    });
+
+    res.status(201).json({
+        success: true,
+        message: "Answer submitted successfully",
+        data: response
+    });
+});
+
+export const submitQuizAttempt = asyncHandler(async (req, res) => {
+    const result = await submitQuizAttemptService({
+        sessionId: req.params.id,
+        studentId: req.user._id
+    });
+
+    res.status(200).json({
+        success: true,
+        message: "Quiz submitted successfully",
+        data: result
+    });
+});

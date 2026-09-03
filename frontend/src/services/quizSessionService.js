@@ -42,12 +42,42 @@ const endQuizSession = async (id) => {
     return response.data;
 };
 
+const submitQuizResponse = async ({
+    sessionId,
+    attemptId,
+    assessmentQuestionId,
+    selectedAnswer,
+    responseTimeMs
+}) => {
+    const response = await api.post(
+        `/quiz-sessions/${sessionId}/responses`,
+        {
+            attemptId,
+            assessmentQuestionId,
+            selectedAnswer,
+            responseTimeMs
+        }
+    );
+
+    return response.data;
+};
+
+const submitQuizAttempt = async (sessionId) => {
+    const response = await api.post(
+        `/quiz-sessions/${sessionId}/submit`
+    );
+
+    return response.data;
+};
+
 const quizSessionService = {
     createQuizSession,
     getQuizSessionById,
     joinQuizSession,
     startQuizSession,
     endQuizSession,
+    submitQuizResponse,
+    submitQuizAttempt
 };
 
 export default quizSessionService;

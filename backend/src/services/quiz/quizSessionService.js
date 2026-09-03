@@ -121,18 +121,12 @@ export const createQuizSession = async ({
     return session;
 };
 
-export const getQuizSessionById = async (sessionId) => {
-
-    if (!mongoose.Types.ObjectId.isValid(sessionId)) {
-        throw new AppError(
-            "Invalid quiz session ID",
-            400
-        );
-    }
-
-    const session = await QuizSession.findById(
-        sessionId
-    )
+export const getQuizSessionById = async ({
+    sessionId,
+    userId,
+    userRole
+}) => {
+    const session = await QuizSession.findById(sessionId)
         .populate(
             "assessment",
             "code title description duration"
@@ -149,15 +143,31 @@ export const getQuizSessionById = async (sessionId) => {
         );
     }
 
-    const participantCount =
-        await QuizAttempt.countDocuments({
-            session: sessionId
-        });
+    const participantCount = await QuizAttempt.countDocuments({
+        session: session._id
+    });
 
-    return {
-        ...session.toObject(),
-        participantCount
-    };
+    const sessionData = session.toObject();
+
+    sessionData.participantCount = participantCount;
+
+    /*
+     * Only expose a student's own attempt.
+     *
+     * Faculty/Admin do not need a studentAttempt object.
+     */
+    if (userRole === "STUDENT") {
+        const studentAttempt = await QuizAttempt.findOne({
+            session: session._id,
+            student: userId
+        }).select(
+            "_id status startedAt submittedAt currentQuestion attemptedQuestions correctAnswers totalPoints currentStreak longestStreak"
+        );
+
+        sessionData.studentAttempt = studentAttempt;
+    }
+
+    return sessionData;
 };
 
 export const joinQuizSession = async ({

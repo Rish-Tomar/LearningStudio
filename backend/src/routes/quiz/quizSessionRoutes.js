@@ -5,7 +5,9 @@ import {
     getQuizSessionById,
     joinQuizSession,
     startQuizSession,
-    endQuizSession
+    endQuizSession,
+    submitQuizResponse,
+    submitQuizAttempt
 } from "../../controllers/Quiz/quizSessionController.js";
 // import { startQuizSession } from "../../controllers/Quiz/quizSessionController.js";
 import {
@@ -14,19 +16,9 @@ import {
 } from "../../middlewares/authMiddleware.js";
 
 const router = express.Router();
+router.post("/", protect, authorize("FACULTY", "ADMIN"), createQuizSession);
 
-router.post(
-    "/",
-    protect,
-    authorize("FACULTY", "ADMIN"),
-    createQuizSession
-);
-
-router.get(
-    "/:id",
-    protect,
-    getQuizSessionById
-);
+router.get("/:id", protect, getQuizSessionById);
 
 router.post(
     "/join",
@@ -35,6 +27,19 @@ router.post(
     joinQuizSession
 );
 
+router.post(
+    "/:id/responses",
+    protect,
+    authorize("STUDENT"),
+    submitQuizResponse
+);
+
+router.post(
+    "/:id/submit",
+    protect,
+    authorize("STUDENT"),
+    submitQuizAttempt
+);
 router.patch(
     "/:id/start",
     protect,
@@ -48,5 +53,7 @@ router.patch(
     authorize("FACULTY", "ADMIN"),
     endQuizSession
 );
+
+
 
 export default router;
