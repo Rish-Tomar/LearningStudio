@@ -200,11 +200,13 @@ const HostQuiz = () => {
 
             const response =
                 await quizSessionService
-                    .startQuizSession(
-                        session._id
-                    );
+                    .startQuizSession( session._id );
 
-            setSession(response.data);
+            const sessionResponse =
+                await quizSessionService
+                    .getQuizSessionById(session._id);
+
+            setSession(sessionResponse.data);
 
         } catch (error) {
 
@@ -386,11 +388,13 @@ const HostQuiz = () => {
                             sx={{ py: 4 }}
                         >
 
-                            <Typography
+                           <Typography
                                 variant="h5"
                                 fontWeight={600}
                             >
-                                Waiting for Students
+                                {session.status === "WAITING"
+                                    ? "Waiting for Students"
+                                    : "Quiz is Live"}
                             </Typography>
 
                             <Typography

@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState,useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
     Alert,
     Box,
@@ -18,20 +19,18 @@ import quizSessionService from "../../services/quizSessionService";
 
 const StudentJoinQuiz = () => {
 
+    const navigate = useNavigate();
     const [joinCode, setJoinCode] = useState("");
 
-    const [loading, setLoading] =
-        useState(false);
+    const [loading, setLoading] = useState(false);
 
-    const [error, setError] =
-        useState("");
+    const [error, setError] = useState("");
 
-    const [success, setSuccess] =
-        useState("");
+    const [success, setSuccess] = useState("");
 
-    const [attempt, setAttempt] =
-        useState(null);
+    const [attempt, setAttempt] =  useState(null);
 
+    const [session,setSession] = useState(null);
 
     const handleJoinCodeChange = (event) => {
 
@@ -74,6 +73,8 @@ const StudentJoinQuiz = () => {
 
             setAttempt(response.data);
 
+            setSession({ _id: response.data.session,status: "WAITING"});
+
             setSuccess(
                 "You joined the quiz successfully!"
             );
@@ -97,6 +98,57 @@ const StudentJoinQuiz = () => {
         }
 
     };
+
+    useEffect(() => {
+
+        if (!session?._id) {
+            return;
+        }
+
+        if (session.status !== "WAITING") {
+            return;
+        }
+
+        const refreshSession = async () => {
+
+            try {
+
+                const response =
+                    await quizSessionService
+                        .getQuizSessionById(
+                            session._id
+                        );
+
+                const updatedSession = response.data;
+
+                setSession(updatedSession);
+
+                if (updatedSession.status === "LIVE") {
+                    navigate(`/student/quiz/${updatedSession._id}`);
+                }
+
+            } catch (error) {
+
+                console.error(
+                    "Failed to refresh quiz session:",
+                    error
+                );
+
+            }
+
+        };
+
+        const intervalId =
+            setInterval(
+                refreshSession,
+                2000
+            );
+
+        return () => {
+            clearInterval(intervalId);
+        };
+
+    }, [session?._id, session?.status]);
 
 
     return (
@@ -285,7 +337,9 @@ const StudentJoinQuiz = () => {
                                         <Typography
                                             fontWeight={700}
                                         >
-                                            Waiting for Host
+                                            {session?.status === "LIVE"
+                                                ? "Quiz Starting..."
+                                                : "Waiting for Host"}
                                         </Typography>
 
                                     </Box>
@@ -296,9 +350,9 @@ const StudentJoinQuiz = () => {
                                         color="text.secondary"
                                         textAlign="center"
                                     >
-                                        Please wait for your
-                                        faculty member to start
-                                        the quiz.
+                                        {session?.status === "LIVE"
+                                            ? "The host has started the quiz."
+                                            : "Please wait for your faculty member to start the quiz."}
                                     </Typography>
 
                                 </>
