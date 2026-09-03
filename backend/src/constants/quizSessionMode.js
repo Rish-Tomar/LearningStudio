@@ -1,0 +1,5 @@
+export const QUIZ_SESSION_MODE = Object.freeze({
+    STUDENT_PACED: "STUDENT_PACED",
+    TEACHER_PACED: "TEACHER_PACED",
+    TEST: "TEST"
+});

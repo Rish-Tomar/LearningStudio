@@ -98,6 +98,7 @@ export const createAssessment = async ({
     return assessment;
 };
 
+
 export const getAllAssessments = async () => {
 
     const assessments = await Assessment.find()
@@ -106,6 +107,7 @@ export const getAllAssessments = async () => {
 
     return assessments;
 };
+
 
 export const getAssessmentById = async (id) => {
 
@@ -182,6 +184,183 @@ export const getAssessmentById = async (id) => {
     };
 };
 
+
+/*
+ * Update Assessment
+ *
+ * Only DRAFT assessments can be edited.
+ *
+ * Editable fields:
+ * - title
+ * - description
+ * - duration
+ * - startAt
+ * - endAt
+ *
+ * Immutable fields:
+ * - code
+ * - status
+ * - createdBy
+ */
+export const updateAssessment = async (
+    id,
+    {
+        title,
+        description,
+        duration,
+        startAt,
+        endAt
+    }
+) => {
+
+    // 1. Validate Assessment ID
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+        throw new AppError(
+            "Invalid assessment ID",
+            400
+        );
+    }
+
+
+    // 2. Find Assessment
+    const assessment = await Assessment.findById(id);
+
+    if (!assessment) {
+        throw new AppError(
+            "Assessment not found",
+            404
+        );
+    }
+
+
+    // 3. Assessment must be DRAFT
+    if (
+        assessment.status !==
+        ASSESSMENT_STATUS.DRAFT
+    ) {
+        throw new AppError(
+            "Only draft assessments can be edited",
+            400
+        );
+    }
+
+
+    // 4. Validate title
+    if (
+        typeof title !== "string" ||
+        !title.trim()
+    ) {
+        throw new AppError(
+            "Assessment title is required",
+            400
+        );
+    }
+
+
+    if (title.trim().length < 3) {
+        throw new AppError(
+            "Assessment title must be at least 3 characters",
+            400
+        );
+    }
+
+
+    if (title.trim().length > 200) {
+        throw new AppError(
+            "Assessment title cannot exceed 200 characters",
+            400
+        );
+    }
+
+
+    // 5. Validate description
+    if (
+        description !== undefined &&
+        description !== null &&
+        typeof description !== "string"
+    ) {
+        throw new AppError(
+            "Assessment description must be text",
+            400
+        );
+    }
+
+
+    if (
+        typeof description === "string" &&
+        description.trim().length > 1000
+    ) {
+        throw new AppError(
+            "Assessment description cannot exceed 1000 characters",
+            400
+        );
+    }
+
+
+    // 6. Validate duration
+    const numericDuration = Number(duration);
+
+    if (
+        !Number.isInteger(numericDuration) ||
+        numericDuration <= 0
+    ) {
+        throw new AppError(
+            "Assessment duration must be a positive integer",
+            400
+        );
+    }
+
+
+    // 7. Validate dates
+    const startDate = new Date(startAt);
+    const endDate = new Date(endAt);
+
+    if (
+        Number.isNaN(startDate.getTime()) ||
+        Number.isNaN(endDate.getTime())
+    ) {
+        throw new AppError(
+            "Invalid assessment start or end time",
+            400
+        );
+    }
+
+
+    // 8. End time must be after start time
+    if (endDate <= startDate) {
+        throw new AppError(
+            "Assessment end time must be after start time",
+            400
+        );
+    }
+
+
+    // 9. Update editable fields
+    assessment.title = title.trim();
+
+    assessment.description =
+        typeof description === "string"
+            ? description.trim()
+            : "";
+
+    assessment.duration =
+        numericDuration;
+
+    assessment.startAt =
+        startDate;
+
+    assessment.endAt =
+        endDate;
+
+
+    // 10. Save
+    await assessment.save();
+
+
+    return assessment;
+};
+
+
 export const publishAssessment = async (id) => {
 
     // 1. Validate Assessment ID
@@ -205,7 +384,10 @@ export const publishAssessment = async (id) => {
 
 
     // 3. Assessment must be DRAFT
-    if (assessment.status !== ASSESSMENT_STATUS.DRAFT) {
+    if (
+        assessment.status !==
+        ASSESSMENT_STATUS.DRAFT
+    ) {
         throw new AppError(
             "Only draft assessments can be published",
             400
@@ -257,12 +439,16 @@ export const publishAssessment = async (id) => {
 
 
     // 8. Every question must be ACTIVE
-    for (const assessmentQuestion of assessmentQuestions) {
+    for (
+        const assessmentQuestion
+        of assessmentQuestions
+    ) {
 
         if (
             !assessmentQuestion.question ||
-            assessmentQuestion.question.status !== QUESTION_STATUS.ACTIVE
-        ){
+            assessmentQuestion.question.status !==
+                QUESTION_STATUS.ACTIVE
+        ) {
             throw new AppError(
                 "All questions in the assessment must be active",
                 400
@@ -272,13 +458,15 @@ export const publishAssessment = async (id) => {
 
 
     // 9. Publish Assessment
-    assessment.status = ASSESSMENT_STATUS.PUBLISHED;
+    assessment.status =
+        ASSESSMENT_STATUS.PUBLISHED;
 
     await assessment.save();
 
 
     return assessment;
 };
+
 
 export const closeAssessment = async (id) => {
 
@@ -292,7 +480,8 @@ export const closeAssessment = async (id) => {
 
 
     // 2. Find Assessment
-    const assessment = await Assessment.findById(id);
+    const assessment =
+        await Assessment.findById(id);
 
     if (!assessment) {
         throw new AppError(
@@ -303,7 +492,10 @@ export const closeAssessment = async (id) => {
 
 
     // 3. Assessment must be PUBLISHED
-    if (assessment.status !== ASSESSMENT_STATUS.PUBLISHED) {
+    if (
+        assessment.status !==
+        ASSESSMENT_STATUS.PUBLISHED
+    ) {
         throw new AppError(
             "Only published assessments can be closed",
             400
@@ -312,7 +504,8 @@ export const closeAssessment = async (id) => {
 
 
     // 4. Close Assessment
-    assessment.status = ASSESSMENT_STATUS.CLOSED;
+    assessment.status =
+        ASSESSMENT_STATUS.CLOSED;
 
     await assessment.save();
 

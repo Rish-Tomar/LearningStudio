@@ -25,6 +25,10 @@ import TopicLearningStudio from "../pages/faculty/learningStudio/TopicLearningSt
 import CreateLearningContent from "../pages/faculty/learningStudio/CreateLearningContent";
 import EditLearningContent from "../pages/faculty/learningStudio/EditLearningContent";
 import EditLearningActivity from "../pages/faculty/learningStudio/EditLearningActivity";
+import AssessmentList from "../pages/faculty/assessments/AssessmentList";
+import CreateAssessment from "../pages/faculty/assessments/CreateAssessment";
+import AssessmentPreview from "../pages/faculty/assessments/AssessmentPreview";
+import EditAssessment from "../pages/faculty/assessments/EditAssessment";
 
 const FacultyRoutes = () => {
 
@@ -190,6 +194,38 @@ const FacultyRoutes = () => {
                 element={
                     <ProtectedRoute roles={["FACULTY"]}>
                         <EditLearningActivity />
+                    </ProtectedRoute>
+                }
+            />
+            <Route
+                path="/assessments"
+                element={
+                    <ProtectedRoute roles={["FACULTY"]}>
+                        <AssessmentList />
+                    </ProtectedRoute>
+                }
+            />
+            <Route
+                path="/assessments/create"
+                element={
+                    <ProtectedRoute roles={["FACULTY"]}>
+                        <CreateAssessment />
+                    </ProtectedRoute>
+                }
+            />
+            <Route
+                path="/assessments/:id"
+                element={
+                    <ProtectedRoute roles={["FACULTY"]}>
+                        <AssessmentPreview />
+                    </ProtectedRoute>
+                }
+            />
+            <Route
+                path="/assessments/:id/edit"
+                element={
+                    <ProtectedRoute roles={["FACULTY"]}>
+                        <EditAssessment />
                     </ProtectedRoute>
                 }
             />

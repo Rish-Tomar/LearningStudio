@@ -17,7 +17,7 @@ import learningActivityRoutes from "./routes/learningActivityRoutes.js";
 import learningContentRoutes from "./routes/learningContentRoutes.js";
 import learningStudioRoutes from "./routes/learningStudioRoutes.js";
 import enrollmentRoutes from "./routes/enrollmentRoutes.js";
-
+import quizSessionRoutes from "./routes/quiz/quizSessionRoutes.js"
 const app = express();
 
 
@@ -82,6 +82,11 @@ app.use(
 app.use(
     "/api/assessment-questions",
     assessmentQuestionRoutes
+);
+
+app.use(
+    "/api/quiz-sessions",
+    quizSessionRoutes
 );
 
 app.use("/api/courses", courseRoutes);

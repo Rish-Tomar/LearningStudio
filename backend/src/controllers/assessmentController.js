@@ -4,13 +4,15 @@ import {
     createAssessment as createAssessmentService,
     getAllAssessments as getAllAssessmentsService,
     getAssessmentById as getAssessmentByIdService,
+    updateAssessment as updateAssessmentService,
     publishAssessment as publishAssessmentService,
     closeAssessment as closeAssessmentService
 } from "../services/assessmentService.js";
 
 export const createAssessment = asyncHandler(async (req, res) => {
 
-    const assessment = await createAssessmentService(req.body);
+    const assessment =
+        await createAssessmentService(req.body);
 
     res.status(201).json({
         success: true,
@@ -22,7 +24,8 @@ export const createAssessment = asyncHandler(async (req, res) => {
 
 export const getAllAssessments = asyncHandler(async (req, res) => {
 
-    const assessments = await getAllAssessmentsService();
+    const assessments =
+        await getAllAssessmentsService();
 
     res.status(200).json({
         success: true,
@@ -43,6 +46,24 @@ export const getAssessmentById = asyncHandler(async (req, res) => {
 
 });
 
+export const updateAssessment = asyncHandler(
+    async (req, res) => {
+
+        const assessment =
+            await updateAssessmentService(
+                req.params.id,
+                req.body
+            );
+
+        res.status(200).json({
+            success: true,
+            message: "Assessment updated successfully",
+            data: assessment
+        });
+
+    }
+);
+
 export const publishAssessment = asyncHandler(
     async (req, res) => {
 
@@ -54,6 +75,7 @@ export const publishAssessment = asyncHandler(
             message: "Assessment published successfully",
             data: assessment
         });
+
     }
 );
 
@@ -68,5 +90,6 @@ export const closeAssessment = asyncHandler(
             message: "Assessment closed successfully",
             data: assessment
         });
+
     }
 );
