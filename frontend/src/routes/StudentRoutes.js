@@ -6,6 +6,7 @@ import StudentDashboard from "../pages/student/StudentDashBoard";
 import StudentCourses from "../pages/student/StudentCourses";
 import StudentCourseOverview from "../pages/student/StudentCourseOverview";
 import StudentTopicLearning from "../pages/student/StudentTopicLearning";
+import StudentJoinQuiz from "../pages/student/StudentJoinQuiz";
 
 const StudentRoutes = () => {
 
@@ -45,6 +46,15 @@ const StudentRoutes = () => {
                 element={
                     <ProtectedRoute roles={["STUDENT"]}>
                         <StudentTopicLearning />
+                    </ProtectedRoute>
+                }
+            />
+
+            <Route
+                path="/quiz/join"
+                element={
+                    <ProtectedRoute roles={["STUDENT"]}>
+                        <StudentJoinQuiz />
                     </ProtectedRoute>
                 }
             />

@@ -29,6 +29,7 @@ import AssessmentList from "../pages/faculty/assessments/AssessmentList";
 import CreateAssessment from "../pages/faculty/assessments/CreateAssessment";
 import AssessmentPreview from "../pages/faculty/assessments/AssessmentPreview";
 import EditAssessment from "../pages/faculty/assessments/EditAssessment";
+import HostQuiz from "../pages/faculty/assessments/HostQuiz";
 
 const FacultyRoutes = () => {
 
@@ -226,6 +227,14 @@ const FacultyRoutes = () => {
                 element={
                     <ProtectedRoute roles={["FACULTY"]}>
                         <EditAssessment />
+                    </ProtectedRoute>
+                }
+            />
+            <Route
+                path="/assessments/:id/host"
+                element={
+                    <ProtectedRoute roles={["FACULTY"]}>
+                        <HostQuiz />
                     </ProtectedRoute>
                 }
             />
