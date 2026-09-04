@@ -8,14 +8,10 @@ import {
     CardContent,
     CircularProgress,
     Divider,
-    Grid,
+    Paper,
     Stack,
     Typography
 } from "@mui/material";
-
-// import CheckCircleOutlineIcon from "@mui/icons-material/CheckCircleOutline";
-import EmojiEventsOutlinedIcon from "@mui/icons-material/EmojiEventsOutlined";
-import HomeOutlinedIcon from "@mui/icons-material/HomeOutlined";
 
 import { useNavigate, useParams } from "react-router-dom";
 
@@ -28,12 +24,21 @@ const QuizResult = () => {
     const { sessionId } = useParams();
 
     const [session, setSession] = useState(null);
-    const [result, setResult] = useState(null);
+    const [attempt, setAttempt] = useState(null);
+
+    const [leaderboardData, setLeaderboardData] =
+        useState(null);
 
     const [loading, setLoading] =
         useState(true);
 
+    const [leaderboardLoading, setLeaderboardLoading] =
+        useState(true);
+
     const [error, setError] =
+        useState("");
+
+    const [leaderboardError, setLeaderboardError] =
         useState("");
 
     useEffect(() => {
@@ -45,69 +50,26 @@ const QuizResult = () => {
                 setLoading(true);
                 setError("");
 
-                /*
-                 * Fetch the session again.
-                 *
-                 * The backend now returns the student's
-                 * own attempt as studentAttempt.
-                 */
                 const response =
-                    await quizSessionService.getQuizSessionById(
-                        sessionId
-                    );
+                    await quizSessionService
+                        .getQuizSessionById(sessionId);
 
                 const sessionData =
                     response.data;
 
                 setSession(sessionData);
 
-                const studentAttempt =
-                    sessionData.studentAttempt;
+                if (!sessionData.studentAttempt) {
 
-                if (!studentAttempt) {
-
-                    setError(
-                        "Your quiz attempt could not be found."
+                    throw new Error(
+                        "Quiz attempt information is not available."
                     );
-
-                    return;
 
                 }
 
-                if (
-                    studentAttempt.status !==
-                    "SUBMITTED"
-                ) {
-
-                    setError(
-                        "This quiz has not been submitted yet."
-                    );
-
-                    return;
-
-                }
-
-                setResult({
-                    attemptedQuestions:
-                        studentAttempt.attemptedQuestions ||
-                        0,
-
-                    correctAnswers:
-                        studentAttempt.correctAnswers ||
-                        0,
-
-                    totalPoints:
-                        studentAttempt.totalPoints ||
-                        0,
-
-                    currentStreak:
-                        studentAttempt.currentStreak ||
-                        0,
-
-                    longestStreak:
-                        studentAttempt.longestStreak ||
-                        0
-                });
+                setAttempt(
+                    sessionData.studentAttempt
+                );
 
             } catch (error) {
 
@@ -137,11 +99,49 @@ const QuizResult = () => {
     }, [sessionId]);
 
 
-    /*
-     * =========================================================
-     * LOADING
-     * =========================================================
-     */
+    useEffect(() => {
+
+        const loadLeaderboard = async () => {
+
+            try {
+
+                setLeaderboardLoading(true);
+                setLeaderboardError("");
+
+                const response =
+                    await quizSessionService
+                        .getQuizLeaderboard(sessionId);
+
+                setLeaderboardData(
+                    response.data
+                );
+
+            } catch (error) {
+
+                console.error(
+                    "Failed to load leaderboard:",
+                    error
+                );
+
+                setLeaderboardError(
+                    error.response?.data?.message ||
+                    "Failed to load leaderboard."
+                );
+
+            } finally {
+
+                setLeaderboardLoading(false);
+
+            }
+
+        };
+
+        if (sessionId) {
+            loadLeaderboard();
+        }
+
+    }, [sessionId]);
+
 
     if (loading) {
 
@@ -156,9 +156,7 @@ const QuizResult = () => {
                         justifyContent: "center"
                     }}
                 >
-
                     <CircularProgress />
-
                 </Box>
 
             </DashboardLayout>
@@ -167,13 +165,7 @@ const QuizResult = () => {
     }
 
 
-    /*
-     * =========================================================
-     * ERROR
-     * =========================================================
-     */
-
-    if (error || !result) {
+    if (error || !session || !attempt) {
 
         return (
             <DashboardLayout>
@@ -181,21 +173,17 @@ const QuizResult = () => {
                 <Box
                     sx={{
                         maxWidth: 900,
-                        mx: "auto",
-                        mt: 4
+                        mx: "auto"
                     }}
                 >
 
                     <Alert severity="error">
                         {error ||
-                            "Quiz result is unavailable."}
+                            "Quiz result could not be loaded."}
                     </Alert>
 
                     <Button
                         sx={{ mt: 2 }}
-                        startIcon={
-                            <HomeOutlinedIcon />
-                        }
                         onClick={() =>
                             navigate(
                                 "/student/quiz/join"
@@ -213,39 +201,39 @@ const QuizResult = () => {
     }
 
 
-    /*
-     * =========================================================
-     * CALCULATIONS
-     * =========================================================
-     */
+    const totalPoints =
+        attempt.totalPoints || 0;
 
-    const totalQuestions =
-        session?.assessment?.questionsCount ||
-        session?.assessment?.totalQuestions ||
-        null;
+    const correctAnswers =
+        attempt.correctAnswers || 0;
 
-    /*
-     * The current backend response does not provide
-     * totalQuestions, so use attempted + unanswered
-     * only when that information is available.
-     *
-     * For now, accuracy is based on attempted questions.
-     */
+    const attemptedQuestions =
+        attempt.attemptedQuestions || 0;
+
+    const currentStreak =
+        attempt.currentStreak || 0;
+
+    const longestStreak =
+        attempt.longestStreak || 0;
+
     const accuracy =
-        result.attemptedQuestions > 0
+        attemptedQuestions > 0
             ? Math.round(
-                (result.correctAnswers /
-                    result.attemptedQuestions) *
-                100
-            )
+                  (correctAnswers /
+                      attemptedQuestions) *
+                      100
+              )
             : 0;
 
+    const currentStudent =
+        leaderboardData?.currentStudent;
 
-    /*
-     * =========================================================
-     * RESULT UI
-     * =========================================================
-     */
+    const leaderboard =
+        leaderboardData?.leaderboard || [];
+
+    const topTen =
+        leaderboard.slice(0, 10);
+
 
     return (
         <DashboardLayout>
@@ -254,79 +242,47 @@ const QuizResult = () => {
                 sx={{
                     maxWidth: 1000,
                     mx: "auto",
-                    py: 4
+                    pb: 5
                 }}
             >
 
-                {/* =================================================
-                    SUCCESS HEADER
-                ================================================= */}
+                {/* Page Header */}
 
-                <Card
-                    sx={{
-                        mb: 3,
-                        textAlign: "center",
-                        borderRadius: 3
-                    }}
-                >
+                <Box sx={{ mb: 3 }}>
+
+                    <Typography
+                        variant="h4"
+                        fontWeight={700}
+                    >
+                        Quiz Submitted!
+                    </Typography>
+
+                    <Typography
+                        color="text.secondary"
+                        sx={{ mt: 0.5 }}
+                    >
+                        {session.assessment?.title ||
+                            "Quiz"}
+                    </Typography>
+
+                </Box>
+
+
+                {/* Performance Card */}
+
+                <Card>
 
                     <CardContent
                         sx={{
-                            py: 5
+                            p: {
+                                xs: 2,
+                                sm: 3
+                            }
                         }}
                     >
 
                         <Typography
-                            color="success.main"
-                            sx={{
-                                fontSize: 64,
-                                fontWeight: 700,
-                                lineHeight: 1,
-                                mb: 2
-                            }}
-                        >
-                            ✓
-                        </Typography>
-
-                        <Typography
-                            variant="h4"
-                            fontWeight={700}
-                        >
-                            Quiz Submitted!
-                        </Typography>
-
-                        <Typography
-                            color="text.secondary"
-                            sx={{ mt: 1 }}
-                        >
-                            {session?.assessment?.title ||
-                                "Quiz"}
-                        </Typography>
-
-                    </CardContent>
-
-                </Card>
-
-
-                {/* =================================================
-                    SCORE
-                ================================================= */}
-
-                <Card
-                    sx={{
-                        mb: 3,
-                        borderRadius: 3
-                    }}
-                >
-
-                    <CardContent
-                        sx={{
-                            py: 4
-                        }}
-                    >
-
-                        <Typography
-                            variant="h6"
+                            variant="h5"
                             fontWeight={700}
                             sx={{ mb: 3 }}
                         >
@@ -334,307 +290,641 @@ const QuizResult = () => {
                         </Typography>
 
 
-                        <Grid
-                            container
-                            spacing={2}
+                        <Box
+                            sx={{
+                                display: "grid",
+                                gridTemplateColumns: {
+                                    xs: "1fr 1fr",
+                                    sm: "repeat(4, 1fr)"
+                                },
+                                gap: 2
+                            }}
                         >
 
                             {/* Points */}
 
-                            <Grid
-                                item
-                                xs={12}
-                                sm={6}
-                                md={3}
-                            >
-
-                                <Card
-                                    variant="outlined"
-                                    sx={{
-                                        height: "100%"
-                                    }}
-                                >
-
-                                    <CardContent>
-
-                                        <Typography
-                                            variant="h3"
-                                            fontWeight={700}
-                                        >
-                                            {
-                                                result.totalPoints
-                                            }
-                                        </Typography>
-
-                                        <Typography
-                                            color="text.secondary"
-                                        >
-                                            Points
-                                        </Typography>
-
-                                    </CardContent>
-
-                                </Card>
-
-                            </Grid>
-
-
-                            {/* Correct */}
-
-                            <Grid
-                                item
-                                xs={12}
-                                sm={6}
-                                md={3}
-                            >
-
-                                <Card
-                                    variant="outlined"
-                                    sx={{
-                                        height: "100%"
-                                    }}
-                                >
-
-                                    <CardContent>
-
-                                        <Typography
-                                            variant="h3"
-                                            fontWeight={700}
-                                        >
-                                            {
-                                                result.correctAnswers
-                                            }
-                                        </Typography>
-
-                                        <Typography
-                                            color="text.secondary"
-                                        >
-                                            Correct
-                                        </Typography>
-
-                                    </CardContent>
-
-                                </Card>
-
-                            </Grid>
-
-
-                            {/* Attempted */}
-
-                            <Grid
-                                item
-                                xs={12}
-                                sm={6}
-                                md={3}
-                            >
-
-                                <Card
-                                    variant="outlined"
-                                    sx={{
-                                        height: "100%"
-                                    }}
-                                >
-
-                                    <CardContent>
-
-                                        <Typography
-                                            variant="h3"
-                                            fontWeight={700}
-                                        >
-                                            {
-                                                result.attemptedQuestions
-                                            }
-                                        </Typography>
-
-                                        <Typography
-                                            color="text.secondary"
-                                        >
-                                            Attempted
-                                        </Typography>
-
-                                    </CardContent>
-
-                                </Card>
-
-                            </Grid>
-
-
-                            {/* Accuracy */}
-
-                            <Grid
-                                item
-                                xs={12}
-                                sm={6}
-                                md={3}
-                            >
-
-                                <Card
-                                    variant="outlined"
-                                    sx={{
-                                        height: "100%"
-                                    }}
-                                >
-
-                                    <CardContent>
-
-                                        <Typography
-                                            variant="h3"
-                                            fontWeight={700}
-                                        >
-                                            {accuracy}%
-                                        </Typography>
-
-                                        <Typography
-                                            color="text.secondary"
-                                        >
-                                            Accuracy
-                                        </Typography>
-
-                                    </CardContent>
-
-                                </Card>
-
-                            </Grid>
-
-                        </Grid>
-
-                    </CardContent>
-
-                </Card>
-
-
-                {/* =================================================
-                    STREAK
-                ================================================= */}
-
-                <Card
-                    sx={{
-                        mb: 3,
-                        borderRadius: 3
-                    }}
-                >
-
-                    <CardContent>
-
-                        <Stack
-                            direction={{
-                                xs: "column",
-                                sm: "row"
-                            }}
-                            spacing={3}
-                            alignItems={{
-                                xs: "flex-start",
-                                sm: "center"
-                            }}
-                        >
-
-                            <EmojiEventsOutlinedIcon
+                            <Paper
+                                variant="outlined"
                                 sx={{
-                                    fontSize: 52
-                                }}
-                            />
-
-                            <Box
-                                sx={{
-                                    flex: 1
+                                    p: 2,
+                                    textAlign: "center"
                                 }}
                             >
 
                                 <Typography
-                                    variant="h6"
+                                    variant="h4"
                                     fontWeight={700}
                                 >
-                                    Streak Performance
+                                    {totalPoints}
                                 </Typography>
 
                                 <Typography
                                     variant="body2"
                                     color="text.secondary"
                                 >
-                                    Keep building your streak
-                                    in future quizzes.
+                                    Points
                                 </Typography>
 
-                            </Box>
+                            </Paper>
 
 
-                            <Stack
-                                direction="row"
-                                spacing={4}
+                            {/* Correct */}
+
+                            <Paper
+                                variant="outlined"
+                                sx={{
+                                    p: 2,
+                                    textAlign: "center"
+                                }}
                             >
 
-                                <Box>
+                                <Typography
+                                    variant="h4"
+                                    fontWeight={700}
+                                >
+                                    {correctAnswers}
+                                </Typography>
 
-                                    <Typography
-                                        variant="h5"
-                                        fontWeight={700}
-                                    >
-                                        {
-                                            result.currentStreak
-                                        }
-                                    </Typography>
+                                <Typography
+                                    variant="body2"
+                                    color="text.secondary"
+                                >
+                                    Correct
+                                </Typography>
 
-                                    <Typography
-                                        variant="caption"
-                                        color="text.secondary"
-                                    >
-                                        Final Streak
-                                    </Typography>
-
-                                </Box>
+                            </Paper>
 
 
-                                <Divider
-                                    orientation="vertical"
-                                    flexItem
-                                />
+                            {/* Attempted */}
+
+                            <Paper
+                                variant="outlined"
+                                sx={{
+                                    p: 2,
+                                    textAlign: "center"
+                                }}
+                            >
+
+                                <Typography
+                                    variant="h4"
+                                    fontWeight={700}
+                                >
+                                    {attemptedQuestions}
+                                </Typography>
+
+                                <Typography
+                                    variant="body2"
+                                    color="text.secondary"
+                                >
+                                    Attempted
+                                </Typography>
+
+                            </Paper>
 
 
-                                <Box>
+                            {/* Accuracy */}
 
-                                    <Typography
-                                        variant="h5"
-                                        fontWeight={700}
-                                    >
-                                        {
-                                            result.longestStreak
-                                        }
-                                    </Typography>
+                            <Paper
+                                variant="outlined"
+                                sx={{
+                                    p: 2,
+                                    textAlign: "center"
+                                }}
+                            >
 
-                                    <Typography
-                                        variant="caption"
-                                        color="text.secondary"
-                                    >
-                                        Longest Streak
-                                    </Typography>
+                                <Typography
+                                    variant="h4"
+                                    fontWeight={700}
+                                >
+                                    {accuracy}%
+                                </Typography>
 
-                                </Box>
+                                <Typography
+                                    variant="body2"
+                                    color="text.secondary"
+                                >
+                                    Accuracy
+                                </Typography>
 
-                            </Stack>
+                            </Paper>
 
-                        </Stack>
+                        </Box>
 
                     </CardContent>
 
                 </Card>
 
 
-                {/* =================================================
-                    INFORMATION
-                ================================================= */}
+                {/* Streak Performance */}
+
+                <Card sx={{ mt: 3 }}>
+
+                    <CardContent
+                        sx={{
+                            p: {
+                                xs: 2,
+                                sm: 3
+                            }
+                        }}
+                    >
+
+                        <Typography
+                            variant="h5"
+                            fontWeight={700}
+                            sx={{ mb: 3 }}
+                        >
+                            Streak Performance
+                        </Typography>
+
+
+                        <Box
+                            sx={{
+                                display: "grid",
+                                gridTemplateColumns: {
+                                    xs: "1fr 1fr",
+                                    sm: "repeat(2, 1fr)"
+                                },
+                                gap: 2
+                            }}
+                        >
+
+                            {/* Current Streak */}
+
+                            <Paper
+                                variant="outlined"
+                                sx={{
+                                    p: 2.5,
+                                    textAlign: "center"
+                                }}
+                            >
+
+                                <Typography
+                                    sx={{
+                                        fontSize: 34,
+                                        lineHeight: 1,
+                                        mb: 1
+                                    }}
+                                >
+                                    🔥
+                                </Typography>
+
+                                <Typography
+                                    variant="h4"
+                                    fontWeight={700}
+                                >
+                                    {currentStreak}
+                                </Typography>
+
+                                <Typography
+                                    variant="body2"
+                                    color="text.secondary"
+                                >
+                                    Final Streak
+                                </Typography>
+
+                            </Paper>
+
+
+                            {/* Longest Streak */}
+
+                            <Paper
+                                variant="outlined"
+                                sx={{
+                                    p: 2.5,
+                                    textAlign: "center"
+                                }}
+                            >
+
+                                <Typography
+                                    sx={{
+                                        fontSize: 34,
+                                        lineHeight: 1,
+                                        mb: 1
+                                    }}
+                                >
+                                    🏆
+                                </Typography>
+
+                                <Typography
+                                    variant="h4"
+                                    fontWeight={700}
+                                >
+                                    {longestStreak}
+                                </Typography>
+
+                                <Typography
+                                    variant="body2"
+                                    color="text.secondary"
+                                >
+                                    Longest Streak
+                                </Typography>
+
+                            </Paper>
+
+                        </Box>
+
+                    </CardContent>
+
+                </Card>
+
+
+                {/* Success Message */}
 
                 <Alert
                     severity="success"
-                    sx={{ mb: 3 }}
+                    sx={{ mt: 3 }}
                 >
-                    Your quiz attempt has been successfully
-                    recorded.
+                    Your quiz attempt has been
+                    successfully recorded.
                 </Alert>
 
 
-                {/* =================================================
-                    ACTIONS
-                ================================================= */}
+                {/* Leaderboard */}
+
+                <Card sx={{ mt: 3 }}>
+
+                    <CardContent
+                        sx={{
+                            p: {
+                                xs: 2,
+                                sm: 3
+                            }
+                        }}
+                    >
+
+                        <Typography
+                            variant="h5"
+                            fontWeight={700}
+                            sx={{ mb: 3 }}
+                        >
+                            Leaderboard
+                        </Typography>
+
+
+                        {/* Loading */}
+
+                        {leaderboardLoading && (
+
+                            <Box
+                                sx={{
+                                    display: "flex",
+                                    justifyContent: "center",
+                                    py: 5
+                                }}
+                            >
+                                <CircularProgress />
+                            </Box>
+
+                        )}
+
+
+                        {/* Error */}
+
+                        {!leaderboardLoading &&
+                            leaderboardError && (
+
+                                <Alert severity="warning">
+                                    {leaderboardError}
+                                </Alert>
+
+                            )}
+
+
+                        {/* Leaderboard Content */}
+
+                        {!leaderboardLoading &&
+                            !leaderboardError &&
+                            leaderboardData && (
+                                <>
+
+                                    {/* Your Ranking */}
+
+                                    {currentStudent && (
+
+                                        <Paper
+                                            variant="outlined"
+                                            sx={{
+                                                p: 2.5,
+                                                mb: 3,
+                                                bgcolor:
+                                                    "action.hover",
+                                                borderColor:
+                                                    "primary.main"
+                                            }}
+                                        >
+
+                                            <Stack
+                                                direction={{
+                                                    xs: "column",
+                                                    sm: "row"
+                                                }}
+                                                justifyContent="space-between"
+                                                alignItems={{
+                                                    xs: "flex-start",
+                                                    sm: "center"
+                                                }}
+                                                spacing={2}
+                                            >
+
+                                                <Box>
+
+                                                    <Typography
+                                                        variant="body2"
+                                                        color="text.secondary"
+                                                    >
+                                                        Your Ranking
+                                                    </Typography>
+
+                                                    <Typography
+                                                        variant="h3"
+                                                        fontWeight={700}
+                                                        sx={{
+                                                            lineHeight: 1.1,
+                                                            mt: 0.5
+                                                        }}
+                                                    >
+                                                        #
+                                                        {
+                                                            currentStudent.rank
+                                                        }
+                                                    </Typography>
+
+                                                    <Typography
+                                                        variant="body2"
+                                                        color="text.secondary"
+                                                        sx={{ mt: 0.5 }}
+                                                    >
+                                                        of{" "}
+                                                        {
+                                                            leaderboardData.totalParticipants
+                                                        }{" "}
+                                                        students
+                                                    </Typography>
+
+                                                </Box>
+
+
+                                                <Box
+                                                    sx={{
+                                                        textAlign: {
+                                                            xs: "left",
+                                                            sm: "right"
+                                                        }
+                                                    }}
+                                                >
+
+                                                    <Typography
+                                                        variant="body2"
+                                                        color="text.secondary"
+                                                    >
+                                                        Your Points
+                                                    </Typography>
+
+                                                    <Typography
+                                                        variant="h4"
+                                                        fontWeight={700}
+                                                    >
+                                                        {
+                                                            currentStudent.totalPoints
+                                                        }{" "}
+                                                        pts
+                                                    </Typography>
+
+                                                </Box>
+
+                                            </Stack>
+
+                                        </Paper>
+
+                                    )}
+
+
+                                    {/* Rankings Heading */}
+
+                                    <Typography
+                                        variant="subtitle1"
+                                        fontWeight={700}
+                                        sx={{ mb: 1.5 }}
+                                    >
+                                        Rankings
+                                    </Typography>
+
+
+                                    {/* Empty Leaderboard */}
+
+                                    {topTen.length === 0 && (
+
+                                        <Alert severity="info">
+                                            No participants have
+                                            completed the quiz yet.
+                                        </Alert>
+
+                                    )}
+
+
+                                    {/* Ranking Entries */}
+
+                                    <Stack spacing={1}>
+
+                                        {topTen.map(
+                                            (entry) => {
+
+                                                const isCurrentStudent =
+                                                    currentStudent &&
+                                                    String(
+                                                        currentStudent
+                                                            .student?._id
+                                                    ) ===
+                                                        String(
+                                                            entry.student?._id
+                                                        );
+
+                                                return (
+
+                                                    <Paper
+                                                        key={
+                                                            entry.attemptId
+                                                        }
+                                                        variant="outlined"
+                                                        sx={{
+                                                            p: 1.5,
+                                                            bgcolor:
+                                                                isCurrentStudent
+                                                                    ? "action.selected"
+                                                                    : "background.paper",
+                                                            borderColor:
+                                                                isCurrentStudent
+                                                                    ? "primary.main"
+                                                                    : "divider",
+                                                            borderWidth:
+                                                                isCurrentStudent
+                                                                    ? 2
+                                                                    : 1
+                                                        }}
+                                                    >
+
+                                                        <Stack
+                                                            direction="row"
+                                                            alignItems="center"
+                                                            spacing={2}
+                                                        >
+
+                                                            {/* Rank */}
+
+                                                            <Box
+                                                                sx={{
+                                                                    width: 45,
+                                                                    flexShrink: 0,
+                                                                    textAlign:
+                                                                        "center"
+                                                                }}
+                                                            >
+
+                                                                <Typography
+                                                                    fontWeight={700}
+                                                                >
+                                                                    #
+                                                                    {
+                                                                        entry.rank
+                                                                    }
+                                                                </Typography>
+
+                                                            </Box>
+
+
+                                                            {/* Student */}
+
+                                                            <Box
+                                                                sx={{
+                                                                    flex: 1,
+                                                                    minWidth: 0
+                                                                }}
+                                                            >
+
+                                                                <Typography
+                                                                    fontWeight={
+                                                                        isCurrentStudent
+                                                                            ? 700
+                                                                            : 600
+                                                                    }
+                                                                    noWrap
+                                                                >
+
+                                                                    {
+                                                                        entry.student
+                                                                            ?.name ||
+                                                                        "Student"
+                                                                    }
+
+                                                                    {isCurrentStudent &&
+                                                                        " (You)"}
+
+                                                                </Typography>
+
+
+                                                                <Typography
+                                                                    variant="caption"
+                                                                    color="text.secondary"
+                                                                >
+
+                                                                    {
+                                                                        entry.correctAnswers
+                                                                    }{" "}
+                                                                    correct
+                                                                    {" • "}
+                                                                    {
+                                                                        entry.attemptedQuestions
+                                                                    }{" "}
+                                                                    attempted
+
+                                                                </Typography>
+
+                                                            </Box>
+
+
+                                                            {/* Points */}
+
+                                                            <Box
+                                                                sx={{
+                                                                    textAlign:
+                                                                        "right",
+                                                                    flexShrink: 0
+                                                                }}
+                                                            >
+
+                                                                <Typography
+                                                                    fontWeight={700}
+                                                                >
+
+                                                                    {
+                                                                        entry.totalPoints
+                                                                    }{" "}
+                                                                    pts
+
+                                                                </Typography>
+
+
+                                                                <Typography
+                                                                    variant="caption"
+                                                                    color="text.secondary"
+                                                                >
+
+                                                                    Streak{" "}
+                                                                    {
+                                                                        entry.longestStreak
+                                                                    }
+
+                                                                </Typography>
+
+                                                            </Box>
+
+                                                        </Stack>
+
+                                                    </Paper>
+
+                                                );
+
+                                            }
+                                        )}
+
+                                    </Stack>
+
+
+                                    {/* More Participants */}
+
+                                    {leaderboardData.totalParticipants >
+                                        10 && (
+
+                                        <Typography
+                                            variant="body2"
+                                            color="text.secondary"
+                                            sx={{
+                                                textAlign: "center",
+                                                mt: 2
+                                            }}
+                                        >
+
+                                            Showing top 10 of{" "}
+                                            {
+                                                leaderboardData.totalParticipants
+                                            }{" "}
+                                            participants
+
+                                        </Typography>
+
+                                    )}
+
+                                </>
+                            )}
+
+                    </CardContent>
+
+                </Card>
+
+
+                {/* Bottom Action */}
+
+                <Divider sx={{ mt: 4, mb: 3 }} />
 
                 <Stack
                     direction={{
@@ -646,10 +936,7 @@ const QuizResult = () => {
                 >
 
                     <Button
-                        variant="contained"
-                        startIcon={
-                            <HomeOutlinedIcon />
-                        }
+                        variant="outlined"
                         onClick={() =>
                             navigate(
                                 "/student/quiz/join"

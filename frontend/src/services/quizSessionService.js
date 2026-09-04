@@ -70,6 +70,19 @@ const submitQuizAttempt = async (sessionId) => {
     return response.data;
 };
 
+const getQuizLeaderboard = async (
+    sessionId
+) => {
+
+    const response =
+        await api.get(
+            `/quiz-sessions/${sessionId}/leaderboard`
+        );
+
+    return response.data;
+
+};
+
 const quizSessionService = {
     createQuizSession,
     getQuizSessionById,
@@ -77,7 +90,8 @@ const quizSessionService = {
     startQuizSession,
     endQuizSession,
     submitQuizResponse,
-    submitQuizAttempt
+    submitQuizAttempt,
+    getQuizLeaderboard
 };
 
 export default quizSessionService;

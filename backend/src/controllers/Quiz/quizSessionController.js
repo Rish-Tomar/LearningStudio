@@ -10,6 +10,7 @@ import {
 
 import submitQuizResponseService from "../../services/quiz/quizResponseService.js";
 import submitQuizAttemptService from "../../services/quiz/submitQuizAttemptService.js";
+import getQuizLeaderboardService from "../../services/quiz/getQuizLeaderboardService.js";
 export const createQuizSession = asyncHandler(
     async (req, res) => {
 
@@ -127,3 +128,21 @@ export const submitQuizAttempt = asyncHandler(async (req, res) => {
         data: result
     });
 });
+
+export const getQuizLeaderboard = asyncHandler(
+    async (req, res) => {
+
+        const result =
+            await getQuizLeaderboardService({
+                sessionId: req.params.id,
+                userId: req.user._id,
+                userRole: req.user.role
+            });
+
+        res.status(200).json({
+            success: true,
+            data: result
+        });
+
+    }
+);

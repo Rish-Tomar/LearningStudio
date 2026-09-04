@@ -7,7 +7,8 @@ import {
     startQuizSession,
     endQuizSession,
     submitQuizResponse,
-    submitQuizAttempt
+    submitQuizAttempt,
+    getQuizLeaderboard
 } from "../../controllers/Quiz/quizSessionController.js";
 // import { startQuizSession } from "../../controllers/Quiz/quizSessionController.js";
 import {
@@ -54,6 +55,12 @@ router.patch(
     endQuizSession
 );
 
+router.get(
+    "/:id/leaderboard",
+    protect,
+    authorize("STUDENT", "FACULTY", "ADMIN"),
+    getQuizLeaderboard
+);
 
 
 export default router;
