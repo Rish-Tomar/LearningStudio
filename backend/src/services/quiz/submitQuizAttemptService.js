@@ -8,6 +8,31 @@ import { QUIZ_SESSION_STATUS } from "../../constants/quizSessionStatus.js";
 
 import AppError from "../../utils/AppError.js";
 
+const buildAttemptResult = async (attempt) => {
+    const attemptedQuestions =
+        await QuizResponse.countDocuments({
+            attempt: attempt._id
+        });
+
+    const correctAnswers =
+        await QuizResponse.countDocuments({
+            attempt: attempt._id,
+            isCorrect: true
+        });
+
+    return {
+        attemptId: attempt._id,
+        status: attempt.status,
+        submittedAt: attempt.submittedAt,
+        totalQuestions: null,
+        attemptedQuestions,
+        correctAnswers,
+        totalPoints: attempt.totalPoints,
+        currentStreak: attempt.currentStreak,
+        longestStreak: attempt.longestStreak
+    };
+};
+
 const submitQuizAttempt = async ({
     sessionId,
     studentId
@@ -31,21 +56,8 @@ const submitQuizAttempt = async ({
         );
     }
 
-    /*
-     * A student can submit while the quiz is LIVE.
-     *
-     * If the session has already ended, the student should
-     * not be able to submit an attempt manually.
-     */
-    if (session.status !== QUIZ_SESSION_STATUS.LIVE) {
-        throw new AppError(
-            "Quiz is no longer accepting submissions",
-            400
-        );
-    }
-
     const attempt = await QuizAttempt.findOne({
-        session: sessionId,
+        session: session._id,
         student: studentId
     });
 
@@ -56,20 +68,34 @@ const submitQuizAttempt = async ({
         );
     }
 
+    /*
+     * Idempotent submission.
+     *
+     * If the student has already submitted the quiz,
+     * return the existing final result instead of
+     * treating the request as an error.
+     *
+     * This protects against:
+     * - double-clicking Submit
+     * - browser retries
+     * - network retries
+     * - duplicate frontend requests
+     */
     if (attempt.status === "SUBMITTED") {
-        throw new AppError(
-            "Quiz attempt has already been submitted",
-            409
-        );
+        return buildAttemptResult(attempt);
     }
 
+    /*
+     * If the attempt has already timed out, return
+     * its final state.
+     */
     if (attempt.status === "TIMED_OUT") {
-        throw new AppError(
-            "Quiz attempt has timed out",
-            400
-        );
+        return buildAttemptResult(attempt);
     }
 
+    /*
+     * Only an active attempt can be submitted.
+     */
     if (attempt.status !== "IN_PROGRESS") {
         throw new AppError(
             "Quiz attempt is not active",
@@ -78,7 +104,8 @@ const submitQuizAttempt = async ({
     }
 
     /*
-     * Server-authoritative duration check.
+     * The session must have a valid start time because
+     * the server uses it to determine the deadline.
      */
     if (!session.startedAt) {
         throw new AppError(
@@ -87,11 +114,23 @@ const submitQuizAttempt = async ({
         );
     }
 
+    /*
+     * Server-authoritative deadline.
+     *
+     * The student cannot extend the quiz by changing
+     * the client-side timer.
+     */
     const deadline =
         session.startedAt.getTime() +
         session.duration * 60 * 1000;
 
-    if (Date.now() > deadline) {
+    const now = Date.now();
+
+    /*
+     * If the deadline has passed, atomically change
+     * the attempt to TIMED_OUT.
+     */
+    if (now >= deadline) {
         const timedOutAttempt =
             await QuizAttempt.findOneAndUpdate(
                 {
@@ -105,21 +144,54 @@ const submitQuizAttempt = async ({
                     }
                 },
                 {
-                    returnDocument:"after"
+                    returnDocument: "after"
                 }
             );
 
+        /*
+         * Another request may have changed the attempt
+         * between our initial lookup and this update.
+         *
+         * Fetch the latest state and return it.
+         */
+        if (!timedOutAttempt) {
+            const latestAttempt =
+                await QuizAttempt.findById(attempt._id);
+
+            if (!latestAttempt) {
+                throw new AppError(
+                    "Quiz attempt not found",
+                    404
+                );
+            }
+
+            return buildAttemptResult(latestAttempt);
+        }
+
+        return buildAttemptResult(timedOutAttempt);
+    }
+
+    /*
+     * The session should normally still be LIVE when
+     * a student submits manually.
+     *
+     * If the faculty has ended the session, endQuizSession()
+     * should already have changed active attempts to TIMED_OUT.
+     */
+    if (session.status !== QUIZ_SESSION_STATUS.LIVE) {
         throw new AppError(
-            "Quiz time has expired",
+            "Quiz is no longer accepting submissions",
             400
         );
     }
 
     /*
-     * Mark the attempt as submitted.
+     * Atomically transition:
      *
-     * The conditional status check prevents two simultaneous
-     * requests from both successfully submitting the attempt.
+     * IN_PROGRESS → SUBMITTED
+     *
+     * The status condition prevents two simultaneous
+     * requests from both successfully submitting.
      */
     const submittedAt = new Date();
 
@@ -136,47 +208,34 @@ const submitQuizAttempt = async ({
                 }
             },
             {
-                returnDocument:"after"
+                returnDocument: "after"
             }
         );
 
+    /*
+     * Another request may have submitted or timed out
+     * the attempt between our previous lookup and this
+     * atomic update.
+     */
     if (!updatedAttempt) {
-        throw new AppError(
-            "Quiz attempt was already submitted",
-            409
-        );
+        const latestAttempt =
+            await QuizAttempt.findById(attempt._id);
+
+        if (!latestAttempt) {
+            throw new AppError(
+                "Quiz attempt not found",
+                404
+            );
+        }
+
+        return buildAttemptResult(latestAttempt);
     }
 
     /*
-     * Get the final response count directly from QuizResponse.
-     * This gives us a reliable final attempted-question count.
+     * QuizResponse is the source of truth for the number
+     * of questions actually answered.
      */
-    const attemptedQuestions =
-        await QuizResponse.countDocuments({
-            attempt: updatedAttempt._id
-        });
-
-    const correctAnswers =
-        await QuizResponse.countDocuments({
-            attempt: updatedAttempt._id,
-            isCorrect: true
-        });
-
-    /*
-     * totalPoints/currentStreak/longestStreak are already
-     * maintained on QuizAttempt during answer submission.
-     */
-    return {
-        attemptId: updatedAttempt._id,
-        status: updatedAttempt.status,
-        submittedAt: updatedAttempt.submittedAt,
-        totalQuestions: null,
-        attemptedQuestions,
-        correctAnswers,
-        totalPoints: updatedAttempt.totalPoints,
-        currentStreak: updatedAttempt.currentStreak,
-        longestStreak: updatedAttempt.longestStreak
-    };
+    return buildAttemptResult(updatedAttempt);
 };
 
 export default submitQuizAttempt;

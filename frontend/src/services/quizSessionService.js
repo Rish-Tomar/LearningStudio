@@ -83,6 +83,14 @@ const getQuizLeaderboard = async (
 
 };
 
+const getQuizResult = async (sessionId) => {
+    const response = await api.get(
+        `/quiz-sessions/${sessionId}/result`
+    );
+
+    return response.data;
+};
+
 const quizSessionService = {
     createQuizSession,
     getQuizSessionById,
@@ -91,6 +99,7 @@ const quizSessionService = {
     endQuizSession,
     submitQuizResponse,
     submitQuizAttempt,
+    getQuizResult,
     getQuizLeaderboard
 };
 

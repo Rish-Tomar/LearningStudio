@@ -93,10 +93,21 @@ const quizSessionSchema = new mongoose.Schema(
     }
 );
 
-quizSessionSchema.index({
-    assessment: 1,
-    createdAt: -1
-});
+quizSessionSchema.index(
+    { assessment: 1 },
+    {
+        unique: true,
+        partialFilterExpression: {
+            status: {
+                $in: [
+                    QUIZ_SESSION_STATUS.WAITING,
+                    QUIZ_SESSION_STATUS.LIVE,
+                    QUIZ_SESSION_STATUS.PAUSED
+                ]
+            }
+        }
+    }
+);
 
 const QuizSession = mongoose.model(
     "QuizSession_CGPT",

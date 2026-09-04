@@ -1,15 +1,16 @@
 import mongoose from "mongoose";
-import QuizResponse from "../../models/Quiz/QuizResponse.js";
 
+import QuizResponse from "../../models/Quiz/QuizResponse.js";
 import QuizAttempt from "../../models/Quiz/QuizAttempt.js";
 import QuizSession from "../../models/Quiz/QuizSession.js";
-
 import AssessmentQuestion from "../../models/AssessmentQuestion.js";
+
 import { QUIZ_SESSION_STATUS } from "../../constants/quizSessionStatus.js";
 
 import AppError from "../../utils/AppError.js";
 
-const submitQuizResponse = async ({
+
+const submitQuizResponseService = async ({
     sessionId,
     attemptId,
     assessmentQuestionId,
@@ -23,41 +24,87 @@ const submitQuizResponse = async ({
         !mongoose.Types.ObjectId.isValid(assessmentQuestionId) ||
         !mongoose.Types.ObjectId.isValid(studentId)
     ) {
-        throw new AppError("Invalid quiz response data", 400);
+        throw new AppError(
+            "Invalid quiz response data",
+            400
+        );
     }
 
-    if (!selectedAnswer) {
-        throw new AppError("Selected answer is required", 400);
+
+    if (
+        typeof selectedAnswer !== "string" ||
+        !selectedAnswer.trim()
+    ) {
+        throw new AppError(
+            "Selected answer is required",
+            400
+        );
     }
 
-    const session = await QuizSession.findById(sessionId);
+
+    if (
+        responseTimeMs !== undefined &&
+        responseTimeMs !== null &&
+        (
+            typeof responseTimeMs !== "number" ||
+            !Number.isFinite(responseTimeMs) ||
+            responseTimeMs < 0
+        )
+    ) {
+        throw new AppError(
+            "Invalid response time",
+            400
+        );
+    }
+
+
+    const session =
+        await QuizSession.findById(sessionId);
+
 
     if (!session) {
-        throw new AppError("Quiz session not found", 404);
+        throw new AppError(
+            "Quiz session not found",
+            404
+        );
     }
 
-    if (session.status !== QUIZ_SESSION_STATUS.LIVE) {
+
+    if (
+        session.status !==
+        QUIZ_SESSION_STATUS.LIVE
+    ) {
         throw new AppError(
             "Quiz is not currently accepting answers",
             400
         );
     }
 
+
     if (!session.startedAt) {
-        throw new AppError("Quiz start time is not available", 400);
+        throw new AppError(
+            "Quiz start time is not available",
+            400
+        );
     }
 
+
     /*
-     * Server-authoritative quiz duration check.
-     *
-     * The student cannot extend the quiz simply by keeping
-     * the browser open or manipulating client-side timers.
+     * ---------------------------------------------------------
+     * Server-authoritative timeout check
+     * ---------------------------------------------------------
      */
+
     const deadline =
         session.startedAt.getTime() +
         session.duration * 60 * 1000;
 
-    if (Date.now() > deadline) {
+
+    const now = new Date();
+
+
+    if (now.getTime() >= deadline) {
+
         await QuizAttempt.updateOne(
             {
                 _id: attemptId,
@@ -68,23 +115,40 @@ const submitQuizResponse = async ({
             {
                 $set: {
                     status: "TIMED_OUT",
-                    submittedAt: new Date()
+                    submittedAt: now
                 }
             }
         );
 
-        throw new AppError("Quiz time has expired", 400);
+
+        throw new AppError(
+            "Quiz time has expired",
+            400
+        );
     }
 
-    const attempt = await QuizAttempt.findOne({
-        _id: attemptId,
-        session: sessionId,
-        student: studentId
-    });
+
+    /*
+     * ---------------------------------------------------------
+     * Find and validate attempt
+     * ---------------------------------------------------------
+     */
+
+    const attempt =
+        await QuizAttempt.findOne({
+            _id: attemptId,
+            session: sessionId,
+            student: studentId
+        });
+
 
     if (!attempt) {
-        throw new AppError("Quiz attempt not found", 404);
+        throw new AppError(
+            "Quiz attempt not found",
+            404
+        );
     }
+
 
     if (attempt.status !== "IN_PROGRESS") {
         throw new AppError(
@@ -93,15 +157,19 @@ const submitQuizResponse = async ({
         );
     }
 
+
     /*
-     * Load the assessment question together with the actual
-     * Question document because correctAnswer is required
-     * for server-side evaluation.
+     * ---------------------------------------------------------
+     * Load assessment question and actual question
+     * ---------------------------------------------------------
      */
-    const assessmentQuestion = await AssessmentQuestion.findOne({
-        _id: assessmentQuestionId,
-        assessment: attempt.assessment
-    }).populate("question");
+
+    const assessmentQuestion =
+        await AssessmentQuestion.findOne({
+            _id: assessmentQuestionId,
+            assessment: attempt.assessment
+        }).populate("question");
+
 
     if (!assessmentQuestion) {
         throw new AppError(
@@ -110,6 +178,7 @@ const submitQuizResponse = async ({
         );
     }
 
+
     if (!assessmentQuestion.question) {
         throw new AppError(
             "Question data is not available",
@@ -117,13 +186,15 @@ const submitQuizResponse = async ({
         );
     }
 
+
     /*
-     * Make sure the question belongs to the current session's
-     * assessment.
+     * Make absolutely sure the question belongs
+     * to the current quiz session.
      */
+
     if (
-        session.assessment.toString() !==
-        assessmentQuestion.assessment.toString()
+        String(session.assessment) !==
+        String(assessmentQuestion.assessment)
     ) {
         throw new AppError(
             "Question does not belong to this quiz",
@@ -131,32 +202,31 @@ const submitQuizResponse = async ({
         );
     }
 
-    /*
-     * Prevent duplicate submissions for the same question.
-     */
-    const existingResponse = await QuizResponse.findOne({
-        attempt: attemptId,
-        assessmentQuestion: assessmentQuestionId
-    });
 
-    if (existingResponse) {
-        throw new AppError(
-            "This question has already been answered",
-            409
+    /*
+     * ---------------------------------------------------------
+     * Normalize selected answer
+     * ---------------------------------------------------------
+     */
+
+    const normalizedAnswer =
+        String(selectedAnswer)
+            .trim()
+            .toUpperCase();
+
+
+    /*
+     * ---------------------------------------------------------
+     * Validate that selected option exists
+     * ---------------------------------------------------------
+     */
+
+    const selectedOption =
+        assessmentQuestion.question.options?.find(
+            option =>
+                option.key === normalizedAnswer
         );
-    }
 
-    const normalizedAnswer = String(selectedAnswer)
-        .trim()
-        .toUpperCase();
-
-    /*
-     * Verify that the selected option actually exists
-     * in the question.
-     */
-    const selectedOption = assessmentQuestion.question.options?.find(
-        option => option.key === normalizedAnswer
-    );
 
     if (!selectedOption) {
         throw new AppError(
@@ -165,76 +235,206 @@ const submitQuizResponse = async ({
         );
     }
 
+
     /*
-     * IMPORTANT:
-     * Correctness is determined on the server.
-     *
-     * The client never sends isCorrect or pointsEarned.
+     * ---------------------------------------------------------
+     * Server-side correctness evaluation
+     * ---------------------------------------------------------
      */
+
+    const normalizedCorrectAnswer =
+        String(
+            assessmentQuestion.question.correctAnswer || ""
+        )
+            .trim()
+            .toUpperCase();
+
+
     const isCorrect =
-        assessmentQuestion.question.correctAnswer ===
+        normalizedCorrectAnswer ===
         normalizedAnswer;
 
-    const pointsEarned = isCorrect
-        ? assessmentQuestion.marks
-        : 0;
 
     /*
-     * MVP streak calculation:
+     * ---------------------------------------------------------
+     * Calculate points
      *
-     * Correct answer  -> increment streak
-     * Wrong answer    -> reset streak
+     * MVP:
+     * Correct = assessment question marks
+     * Wrong   = 0
+     * ---------------------------------------------------------
      */
-    const currentStreak = isCorrect
-        ? attempt.currentStreak + 1
-        : 0;
 
-    const longestStreak = Math.max(
-        attempt.longestStreak,
-        currentStreak
-    );
+    const pointsEarned =
+        isCorrect
+            ? assessmentQuestion.marks
+            : 0;
 
-    const response = await QuizResponse.create({
-        session: sessionId,
-        attempt: attemptId,
-        assessmentQuestion: assessmentQuestionId,
-        selectedAnswer: normalizedAnswer,
-        isCorrect,
-        pointsEarned,
-        responseTimeMs:
-            typeof responseTimeMs === "number" &&
-            responseTimeMs >= 0
-                ? responseTimeMs
-                : undefined,
-        answeredAt: new Date()
-    });
 
     /*
-     * Update the student's aggregate quiz statistics.
+     * ---------------------------------------------------------
+     * Calculate streak
+     * ---------------------------------------------------------
      */
-    await QuizAttempt.updateOne(
-        { _id: attemptId },
-        {
-            $inc: {
-                attemptedQuestions: 1,
-                correctAnswers: isCorrect ? 1 : 0,
-                totalPoints: pointsEarned
-            },
-            $set: {
-                currentStreak,
-                longestStreak
-            }
-        }
-    );
 
-    return {
-        responseId: response._id,
-        assessmentQuestionId,
-        isCorrect,
-        pointsEarned,
-        currentStreak,
-        longestStreak
-    };
+    const previousStreak =
+        attempt.currentStreak || 0;
+
+
+    const currentStreak =
+        isCorrect
+            ? previousStreak + 1
+            : 0;
+
+
+    const longestStreak =
+        Math.max(
+            attempt.longestStreak || 0,
+            currentStreak
+        );
+
+
+    /*
+     * ---------------------------------------------------------
+     * MongoDB transaction
+     *
+     * QuizResponse creation and QuizAttempt statistics
+     * must succeed together.
+     * ---------------------------------------------------------
+     */
+
+    const mongoSession =
+        await mongoose.startSession();
+
+
+    try {
+
+        let response;
+
+
+        await mongoSession.withTransaction(
+            async () => {
+
+                /*
+                 * Create response.
+                 *
+                 * The unique index on:
+                 *
+                 * { attempt, assessmentQuestion }
+                 *
+                 * protects against simultaneous duplicate
+                 * submissions.
+                 */
+
+                response =
+                    await QuizResponse.create(
+                        [
+                            {
+                                session: sessionId,
+                                attempt: attemptId,
+                                assessmentQuestion:
+                                    assessmentQuestionId,
+                                selectedAnswer:
+                                    normalizedAnswer,
+                                isCorrect,
+                                pointsEarned,
+                                responseTimeMs:
+                                    responseTimeMs ??
+                                    undefined,
+                                answeredAt: now
+                            }
+                        ],
+                        {
+                            session:
+                                mongoSession
+                        }
+                    );
+
+
+                /*
+                 * Update attempt statistics.
+                 */
+
+                await QuizAttempt.updateOne(
+                    {
+                        _id: attemptId,
+                        status: "IN_PROGRESS"
+                    },
+                    {
+                        $inc: {
+                            attemptedQuestions: 1,
+                            correctAnswers:
+                                isCorrect ? 1 : 0,
+                            totalPoints:
+                                pointsEarned
+                        },
+
+                        $set: {
+                            currentStreak,
+                            longestStreak
+                        }
+                    },
+                    {
+                        session:
+                            mongoSession
+                    }
+                );
+            }
+        );
+
+
+        const createdResponse =
+            response?.[0];
+
+
+        if (!createdResponse) {
+            throw new AppError(
+                "Failed to save quiz response",
+                500
+            );
+        }
+
+
+        return {
+            responseId:
+                createdResponse._id,
+
+            assessmentQuestionId,
+
+            isCorrect,
+
+            pointsEarned,
+
+            currentStreak,
+
+            longestStreak
+        };
+
+    } catch (error) {
+
+        /*
+         * MongoDB duplicate-key error.
+         *
+         * This can happen when two requests for the same
+         * question arrive at almost exactly the same time.
+         */
+
+        if (error?.code === 11000) {
+            throw new AppError(
+                "This question has already been answered",
+                409
+            );
+        }
+
+
+        throw error;
+
+    } finally {
+
+        await mongoSession.endSession();
+
+    }
 };
 
-export default submitQuizResponse;
+
+export default submitQuizResponseService;

@@ -13,19 +13,19 @@ import { QUIZ_SESSION_MODE } from "../../constants/quizSessionMode.js";
 
 import generateJoinCode from "../../utils/generateJoinCode.js";
 
-const createUniqueJoinCode = async () => {
+const ACTIVE_SESSION_STATUSES = [
+    QUIZ_SESSION_STATUS.WAITING,
+    QUIZ_SESSION_STATUS.LIVE,
+    QUIZ_SESSION_STATUS.PAUSED
+];
 
+const createUniqueJoinCode = async () => {
     let joinCode;
     let exists = true;
 
     while (exists) {
-
         joinCode = generateJoinCode();
-
-        exists = await QuizSession.exists({
-            joinCode
-        });
-
+        exists = await QuizSession.exists({ joinCode });
     }
 
     return joinCode;
@@ -37,30 +37,18 @@ export const createQuizSession = async ({
     mode = QUIZ_SESSION_MODE.STUDENT_PACED,
     maxParticipants = 60
 }) => {
-
     if (!mongoose.Types.ObjectId.isValid(assessmentId)) {
-        throw new AppError(
-            "Invalid assessment ID",
-            400
-        );
+        throw new AppError("Invalid assessment ID", 400);
     }
 
     if (!mongoose.Types.ObjectId.isValid(hostId)) {
-        throw new AppError(
-            "Invalid host ID",
-            400
-        );
+        throw new AppError("Invalid host ID", 400);
     }
 
-    const assessment = await Assessment.findById(
-        assessmentId
-    );
+    const assessment = await Assessment.findById(assessmentId);
 
     if (!assessment) {
-        throw new AppError(
-            "Assessment not found",
-            404
-        );
+        throw new AppError("Assessment not found", 404);
     }
 
     if (assessment.status !== ASSESSMENT_STATUS.PUBLISHED) {
@@ -73,26 +61,15 @@ export const createQuizSession = async ({
     const host = await User.findById(hostId);
 
     if (!host) {
-        throw new AppError(
-            "Quiz host not found",
-            404
-        );
+        throw new AppError("Quiz host not found", 404);
     }
 
     if (!["FACULTY", "ADMIN"].includes(host.role)) {
-        throw new AppError(
-            "Only faculty can host a quiz",
-            403
-        );
+        throw new AppError("Only faculty can host a quiz", 403);
     }
 
-    if (
-        !Object.values(QUIZ_SESSION_MODE).includes(mode)
-    ) {
-        throw new AppError(
-            "Invalid quiz session mode",
-            400
-        );
+    if (!Object.values(QUIZ_SESSION_MODE).includes(mode)) {
+        throw new AppError("Invalid quiz session mode", 400);
     }
 
     if (
@@ -106,6 +83,60 @@ export const createQuizSession = async ({
         );
     }
 
+    /*
+     * ---------------------------------------------------------
+     * Reuse an existing active session
+     * ---------------------------------------------------------
+     *
+     * A published assessment can have only one active quiz
+     * session at a time.
+     *
+     * This is important because the HostQuiz page calls
+     * createQuizSession() whenever it is opened/refreshed.
+     *
+     * Therefore:
+     *
+     * WAITING -> return existing session
+     * LIVE    -> return existing session
+     * PAUSED  -> return existing session
+     * ENDED   -> create a new session
+     */
+    const existingSession = await QuizSession.findOne({
+        assessment: assessmentId,
+        status: {
+            $in: ACTIVE_SESSION_STATUSES
+        }
+    });
+
+    if (existingSession) {
+        /*
+         * If another faculty member tries to host the same
+         * assessment while an active session already exists,
+         * do not give them control of that session.
+         */
+        if (
+            existingSession.host.toString() !==
+            hostId.toString()
+        ) {
+            throw new AppError(
+                "This assessment already has an active quiz session hosted by another faculty member",
+                409
+            );
+        }
+
+        /*
+         * Same host opening/refeshing the Host Quiz page.
+         * Return the existing session instead of creating
+         * another one.
+         */
+        return existingSession;
+    }
+
+    /*
+     * No active session exists.
+     *
+     * Therefore a new session can be created.
+     */
     const joinCode = await createUniqueJoinCode();
 
     const session = await QuizSession.create({
@@ -126,6 +157,10 @@ export const getQuizSessionById = async ({
     userId,
     userRole
 }) => {
+    if (!mongoose.Types.ObjectId.isValid(sessionId)) {
+        throw new AppError("Invalid quiz session ID", 400);
+    }
+
     const session = await QuizSession.findById(sessionId)
         .populate(
             "assessment",
@@ -137,10 +172,7 @@ export const getQuizSessionById = async ({
         );
 
     if (!session) {
-        throw new AppError(
-            "Quiz session not found",
-            404
-        );
+        throw new AppError("Quiz session not found", 404);
     }
 
     const participantCount = await QuizAttempt.countDocuments({
@@ -152,9 +184,8 @@ export const getQuizSessionById = async ({
     sessionData.participantCount = participantCount;
 
     /*
-     * Only expose a student's own attempt.
-     *
-     * Faculty/Admin do not need a studentAttempt object.
+     * Include the student's attempt when the requester
+     * is a student.
      */
     if (userRole === "STUDENT") {
         const studentAttempt = await QuizAttempt.findOne({
@@ -174,7 +205,6 @@ export const joinQuizSession = async ({
     joinCode,
     studentId
 }) => {
-
     if (!joinCode) {
         throw new AppError(
             "Quiz join code is required",
@@ -200,18 +230,14 @@ export const joinQuizSession = async ({
         );
     }
 
-    if (
-        session.status !== QUIZ_SESSION_STATUS.WAITING
-    ) {
+    if (session.status !== QUIZ_SESSION_STATUS.WAITING) {
         throw new AppError(
             "This quiz is no longer accepting participants",
             400
         );
     }
 
-    const student = await User.findById(
-        studentId
-    );
+    const student = await User.findById(studentId);
 
     if (!student) {
         throw new AppError(
@@ -227,25 +253,26 @@ export const joinQuizSession = async ({
         );
     }
 
-    const existingAttempt =
-        await QuizAttempt.findOne({
-            session: session._id,
-            student: studentId
-        });
+    /*
+     * If the student has already joined this session,
+     * return the existing attempt.
+     *
+     * This also makes refresh/re-entry safe.
+     */
+    const existingAttempt = await QuizAttempt.findOne({
+        session: session._id,
+        student: studentId
+    });
 
     if (existingAttempt) {
         return existingAttempt;
     }
 
-    const participantCount =
-        await QuizAttempt.countDocuments({
-            session: session._id
-        });
+    const participantCount = await QuizAttempt.countDocuments({
+        session: session._id
+    });
 
-    if (
-        participantCount >=
-        session.maxParticipants
-    ) {
+    if (participantCount >= session.maxParticipants) {
         throw new AppError(
             "This quiz has reached its participant limit",
             400
@@ -265,9 +292,21 @@ export const startQuizSession = async ({
     sessionId,
     hostId
 }) => {
+    if (!mongoose.Types.ObjectId.isValid(sessionId)) {
+        throw new AppError(
+            "Invalid quiz session ID",
+            400
+        );
+    }
 
-    const session =
-        await QuizSession.findById(sessionId);
+    if (!mongoose.Types.ObjectId.isValid(hostId)) {
+        throw new AppError(
+            "Invalid host ID",
+            400
+        );
+    }
+
+    const session = await QuizSession.findById(sessionId);
 
     if (!session) {
         throw new AppError(
@@ -296,13 +335,17 @@ export const startQuizSession = async ({
         );
     }
 
-    session.status =
-        QUIZ_SESSION_STATUS.LIVE;
+    const startedAt = new Date();
 
-    session.startedAt = new Date();
+    session.status = QUIZ_SESSION_STATUS.LIVE;
+    session.startedAt = startedAt;
 
     await session.save();
 
+    /*
+     * All students who joined the waiting room
+     * move into IN_PROGRESS when the quiz starts.
+     */
     await QuizAttempt.updateMany(
         {
             session: session._id,
@@ -311,7 +354,7 @@ export const startQuizSession = async ({
         {
             $set: {
                 status: "IN_PROGRESS",
-                startedAt: new Date()
+                startedAt
             }
         }
     );
@@ -323,9 +366,21 @@ export const endQuizSession = async ({
     sessionId,
     hostId
 }) => {
+    if (!mongoose.Types.ObjectId.isValid(sessionId)) {
+        throw new AppError(
+            "Invalid quiz session ID",
+            400
+        );
+    }
 
-    const session =
-        await QuizSession.findById(sessionId);
+    if (!mongoose.Types.ObjectId.isValid(hostId)) {
+        throw new AppError(
+            "Invalid host ID",
+            400
+        );
+    }
+
+    const session = await QuizSession.findById(sessionId);
 
     if (!session) {
         throw new AppError(
@@ -354,13 +409,16 @@ export const endQuizSession = async ({
         );
     }
 
-    session.status =
-        QUIZ_SESSION_STATUS.ENDED;
+    const endedAt = new Date();
 
-    session.endedAt = new Date();
+    session.status = QUIZ_SESSION_STATUS.ENDED;
+    session.endedAt = endedAt;
 
     await session.save();
 
+    /*
+     * Students who have not submitted are timed out.
+     */
     await QuizAttempt.updateMany(
         {
             session: session._id,
@@ -374,7 +432,7 @@ export const endQuizSession = async ({
         {
             $set: {
                 status: "TIMED_OUT",
-                submittedAt: new Date()
+                submittedAt: endedAt
             }
         }
     );

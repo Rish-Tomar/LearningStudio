@@ -8,7 +8,8 @@ import {
     endQuizSession,
     submitQuizResponse,
     submitQuizAttempt,
-    getQuizLeaderboard
+    getQuizLeaderboard,
+    getQuizResultController
 } from "../../controllers/Quiz/quizSessionController.js";
 // import { startQuizSession } from "../../controllers/Quiz/quizSessionController.js";
 import {
@@ -60,6 +61,13 @@ router.get(
     protect,
     authorize("STUDENT", "FACULTY", "ADMIN"),
     getQuizLeaderboard
+);
+
+router.get(
+    "/:id/result",
+    protect,
+    authorize("STUDENT"),
+    getQuizResultController
 );
 
 
