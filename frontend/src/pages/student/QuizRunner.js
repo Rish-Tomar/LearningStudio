@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState,useRef } from "react";
 
 import {
     Alert,
@@ -6,6 +6,7 @@ import {
     Button,
     Card,
     CardContent,
+    Chip,
     CircularProgress,
     Dialog,
     DialogActions,
@@ -17,7 +18,7 @@ import {
     Stack,
     Typography
 } from "@mui/material";
-
+import AccessTimeIcon from "@mui/icons-material/AccessTime";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 
@@ -76,6 +77,11 @@ const QuizRunner = () => {
     const [finishError, setFinishError] =
         useState("");
 
+        const [deadlineAt, setDeadlineAt] = useState(null);
+        const [timeLeftMs, setTimeLeftMs] = useState(null);
+        const [autoSubmitting, setAutoSubmitting] = useState(false);
+
+        const timeoutHandledRef = useRef(false);
     /*
      * =========================================================
      * LOAD QUIZ
@@ -143,9 +149,12 @@ const QuizRunner = () => {
                         "TIMED_OUT"
                     ) {
 
-                        setError(
-                            "Your quiz attempt has timed out."
-                        );
+                        // setError(
+                        //     "Your quiz attempt has timed out."
+                        // );
+                         navigate(`/student/quiz/${sessionId}/result`, {
+                            replace: true
+                        });
 
                         return;
                     }
@@ -160,6 +169,15 @@ const QuizRunner = () => {
                     );
 
                     return;
+                }
+                const startedAtMs = new Date(sessionData.startedAt).getTime();
+                const durationMs = Number(sessionData.duration || 0) * 60 * 1000;
+
+                if (Number.isFinite(startedAtMs) && durationMs > 0) {
+                    const calculatedDeadline = startedAtMs + durationMs;
+
+                    setDeadlineAt(calculatedDeadline);
+                    setTimeLeftMs(Math.max(calculatedDeadline - Date.now(), 0));
                 }
 
                 const assessmentId =
@@ -209,7 +227,62 @@ const QuizRunner = () => {
 
     }, [sessionId, navigate]);
 
+    useEffect(() => {
+    if (!deadlineAt) {
+        return;
+    }
 
+    const updateTimer = () => {
+        const remaining = Math.max(deadlineAt - Date.now(), 0);
+        setTimeLeftMs(remaining);
+    };
+
+    updateTimer();
+
+    const intervalId = setInterval(updateTimer, 1000);
+
+    return () => clearInterval(intervalId);
+}, [deadlineAt]);
+
+useEffect(() => {
+    if (
+        timeLeftMs !== 0 ||
+        timeoutHandledRef.current ||
+        !attemptId ||
+        !sessionId
+    ) {
+        return;
+    }
+
+    if (submitting) {
+        return;
+    }
+
+    timeoutHandledRef.current = true;
+
+    const submitTimedOutAttempt = async () => {
+        try {
+            setAutoSubmitting(true);
+
+            await quizSessionService.submitQuizAttempt(sessionId);
+
+            navigate(`/student/quiz/${sessionId}/result`, {
+                replace: true
+            });
+        } catch (error) {
+            console.error("Failed to submit timed-out quiz:", error);
+
+            setError(
+                error.response?.data?.message ||
+                "Time is up, but the quiz could not be submitted. Please try again."
+            );
+        } finally {
+            setAutoSubmitting(false);
+        }
+    };
+
+    submitTimedOutAttempt();
+}, [timeLeftMs, attemptId, sessionId, submitting, navigate]);
     /*
      * =========================================================
      * FLATTEN QUESTIONS
@@ -259,7 +332,7 @@ const QuizRunner = () => {
         optionIndex
     ) => {
 
-        if (!question) {
+        if (!question || autoSubmitting) {
             return;
         }
 
@@ -774,7 +847,23 @@ const QuizRunner = () => {
         currentQuestion ===
         questions.length - 1;
 
+const formatTimeLeft = (milliseconds) => {
+    if (milliseconds === null) {
+        return "--:--";
+    }
 
+    const totalSeconds = Math.ceil(
+        Math.max(milliseconds, 0) / 1000
+    );
+
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+
+    return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+};
+
+const timerIsCritical =
+    timeLeftMs !== null && timeLeftMs <= 60 * 1000;
     /*
      * =========================================================
      * RENDER
@@ -833,32 +922,46 @@ const QuizRunner = () => {
                     </Box>
 
                     <Stack
-                        direction="row"
-                        spacing={2}
-                        alignItems="center"
+                    direction="row"
+                    spacing={2}
+                    alignItems="center"
+                >
+                    <Typography
+                        fontWeight={600}
                     >
+                        Question{" "}
+                        {currentQuestion + 1}{" "}
+                        of {questions.length}
+                    </Typography>
 
-                        <Typography
-                            fontWeight={600}
-                        >
-                            Question{" "}
-                            {currentQuestion + 1}{" "}
-                            of {questions.length}
-                        </Typography>
+                    <Chip
+                        icon={<AccessTimeIcon />}
+                        label={`Time ${formatTimeLeft(timeLeftMs)}`}
+                        color={timerIsCritical ? "error" : "default"}
+                        variant={
+                            timerIsCritical
+                                ? "filled"
+                                : "outlined"
+                        }
+                        sx={{
+                            fontWeight: 700,
+                            minWidth: 105
+                        }}
+                    />
 
-                        <Button
-                            variant="outlined"
-                            color="error"
-                            onClick={  handleOpenFinishDialog }
-                            disabled={
-                                submitting ||
-                                finishingQuiz
-                            }
-                        >
-                            Finish Quiz
-                        </Button>
-
-                    </Stack>
+                    <Button
+                        variant="outlined"
+                        color="error"
+                        onClick={handleOpenFinishDialog}
+                        disabled={
+                            submitting ||
+                            finishingQuiz ||
+                            autoSubmitting
+                        }
+                    >
+                        Finish Quiz
+                    </Button>
+                </Stack>
 
                 </Stack>
 
@@ -876,6 +979,12 @@ const QuizRunner = () => {
                         mb: 3
                     }}
                 />
+
+                {autoSubmitting && (
+                    <Alert severity="warning" sx={{ mb: 3 }}>
+                        Time is up. Submitting your quiz automatically...
+                    </Alert>
+                )}
 
 
                 {/* =================================================
@@ -1066,6 +1175,7 @@ const QuizRunner = () => {
                                                         index
                                                     )
                                                 }
+                                                disabled ={autoSubmitting}
                                                 disableRipple
                                                 sx={{
                                                     minWidth: 0,
@@ -1448,7 +1558,7 @@ const QuizRunner = () => {
                                     disabled={
                                         currentQuestion ===
                                             0 ||
-                                        submitting
+                                        submitting|| autoSubmitting
                                     }
                                     onClick={
                                         handlePrevious
@@ -1467,7 +1577,8 @@ const QuizRunner = () => {
                                         }
                                         disabled={
                                             submitting ||
-                                            finishingQuiz
+                                            finishingQuiz||
+                                            autoSubmitting
                                         }
                                         onClick={
                                             handleNext
@@ -1485,8 +1596,7 @@ const QuizRunner = () => {
                                         color="success"
                                        
                                         disabled={
-                                            submitting ||
-                                            finishingQuiz
+                                            submitting || finishingQuiz|| autoSubmitting
                                         }
                                         onClick={
                                             handleOpenFinishDialog
@@ -1657,7 +1767,7 @@ const QuizRunner = () => {
                             handleFinishQuiz
                         }
                         disabled={
-                            finishingQuiz
+                            finishingQuiz|| autoSubmitting
                         }
                     >
                         {finishingQuiz

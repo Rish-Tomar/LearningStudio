@@ -91,6 +91,14 @@ const getQuizResult = async (sessionId) => {
     return response.data;
 };
 
+const getCompletedQuizSessions = async () => {
+    const response = await api.get(
+        "/quiz-sessions/completed"
+    );
+
+    return response.data;
+};
+
 const quizSessionService = {
     createQuizSession,
     getQuizSessionById,
@@ -100,7 +108,8 @@ const quizSessionService = {
     submitQuizResponse,
     submitQuizAttempt,
     getQuizResult,
-    getQuizLeaderboard
+    getQuizLeaderboard,
+    getCompletedQuizSessions
 };
 
 export default quizSessionService;

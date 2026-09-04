@@ -49,6 +49,11 @@ export const facultyNavigation = [
         icon: AssessmentIcon,
         path: "/faculty/reports",
     },
+    {
+        label: "Completed Quizzes",
+        path: "/faculty/quiz-sessions/completed",
+        icon: AssessmentIcon
+    },
 
 ];
 

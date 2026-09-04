@@ -12,6 +12,7 @@ import submitQuizResponseService from "../../services/quiz/quizResponseService.j
 import submitQuizAttemptService from "../../services/quiz/submitQuizAttemptService.js";
 import getQuizLeaderboardService from "../../services/quiz/getQuizLeaderboardService.js";
 import getQuizResult from "../../services/quiz/quizResultService.js";
+import getCompletedQuizSessions from "../../services/quiz/quizSessionHistoryService.js";
 export const createQuizSession = asyncHandler(
     async (req, res) => {
 
@@ -164,6 +165,26 @@ export const getQuizResultController = async (
         res.status(200).json({
             success: true,
             data: result
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const getCompletedQuizSessionsController = async (
+    req,
+    res,
+    next
+) => {
+    try {
+        const sessions =
+            await getCompletedQuizSessions({
+                hostId: req.user._id
+            });
+
+        res.status(200).json({
+            success: true,
+            data: sessions
         });
     } catch (error) {
         next(error);

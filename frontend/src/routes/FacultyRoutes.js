@@ -30,6 +30,8 @@ import CreateAssessment from "../pages/faculty/assessments/CreateAssessment";
 import AssessmentPreview from "../pages/faculty/assessments/AssessmentPreview";
 import EditAssessment from "../pages/faculty/assessments/EditAssessment";
 import HostQuiz from "../pages/faculty/assessments/HostQuiz";
+import CompletedQuizzes from "../pages/faculty/assessments/CompletedQuizzes";
+import QuizSessionResults from "../pages/faculty/assessments/QuizSessionResults";
 
 const FacultyRoutes = () => {
 
@@ -235,6 +237,22 @@ const FacultyRoutes = () => {
                 element={
                     <ProtectedRoute roles={["FACULTY"]}>
                         <HostQuiz />
+                    </ProtectedRoute>
+                }
+            />
+            <Route
+                path="/quiz-sessions/completed"
+                element={
+                    <ProtectedRoute roles={["FACULTY"]}>
+                        <CompletedQuizzes />
+                    </ProtectedRoute>
+                }
+            />
+            <Route
+                path="/quiz-sessions/:sessionId/results"
+                element={
+                    <ProtectedRoute roles={["FACULTY"]}>
+                        <QuizSessionResults />
                     </ProtectedRoute>
                 }
             />

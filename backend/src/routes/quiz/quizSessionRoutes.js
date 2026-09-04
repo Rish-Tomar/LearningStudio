@@ -9,7 +9,8 @@ import {
     submitQuizResponse,
     submitQuizAttempt,
     getQuizLeaderboard,
-    getQuizResultController
+    getQuizResultController,
+    getCompletedQuizSessionsController
 } from "../../controllers/Quiz/quizSessionController.js";
 // import { startQuizSession } from "../../controllers/Quiz/quizSessionController.js";
 import {
@@ -19,6 +20,13 @@ import {
 
 const router = express.Router();
 router.post("/", protect, authorize("FACULTY", "ADMIN"), createQuizSession);
+
+router.get(
+    "/completed",
+    protect,
+    authorize("FACULTY", "ADMIN"),
+    getCompletedQuizSessionsController
+);
 
 router.get("/:id", protect, getQuizSessionById);
 
@@ -69,6 +77,8 @@ router.get(
     authorize("STUDENT"),
     getQuizResultController
 );
+
+
 
 
 export default router;
